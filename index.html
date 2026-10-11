@@ -488,13 +488,13 @@
       div.innerHTML = `
         <span style="width: 60px; font-weight: bold;">${est}:</span>
         <input type="time" id="est_${est}">
-        <button type="button" onclick="marcarHora('est_${est}')">Hora Actual</button>
+        <button type="button" onclick="marcarHoraEstacion('est_${est}')">Hora Actual</button>
       `;
       container.appendChild(div);
     });
   }
 
-  function marcarHora(id) {
+  function marcarHoraEstacion(id) {
     const ahora = new Date();
     document.getElementById(id).value = ahora.toTimeString().slice(0,5);
   }
@@ -637,4 +637,62 @@
   }
 
   function renderCalendario() {
-    const grid = document.getElementById('gridCale
+    const grid = document.getElementById('gridCalendario');
+    grid.innerHTML = '';
+
+    const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    diasSemana.forEach(d => {
+      const h = document.createElement('div');
+      h.className = 'cal-header';
+      h.innerText = d;
+      grid.appendChild(h);
+    });
+
+    const ahora = new Date();
+    const anio = ahora.getFullYear();
+    const mes = ahora.getMonth();
+
+    const primerDia = new Date(anio, mes, 1).getDay();
+    const totalDias = new Date(anio, mes + 1, 0).getDate();
+
+    for (let i = 0; i < primerDia; i++) {
+      const empty = document.createElement('div');
+      empty.className = 'cal-day empty';
+      grid.appendChild(empty);
+    }
+
+    for (let d = 1; d <= totalDias; d++) {
+      const fechaStr = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const reg = registrosGuardados.find(r => r.fecha === fechaStr);
+
+      const cell = document.createElement('div');
+      cell.className = 'cal-day';
+      cell.innerText = d;
+
+      if (reg) {
+        if (reg.viatico) {
+          cell.classList.add('day-viatico');
+        } else if (reg.esLocal) {
+          cell.classList.add('day-local');
+        }
+        cell.onclick = () => mostrarDetalleDia(reg);
+      }
+
+      grid.appendChild(cell);
+    }
+  }
+
+  function mostrarDetalleDia(reg) {
+    const box = document.getElementById('detalleDia');
+    box.innerHTML = `
+      <strong>Fecha: ${reg.fecha}</strong><br>
+      • Tren: ${reg.tren_prefijo} (Loc: ${reg.locomotora})<br>
+      • Tipo: ${reg.esLocal ? 'Servicio Local' : 'Fuera de Base'}<br>
+      • Hs Extras: ${reg.horas_extras ? reg.horas_extras.toFixed(2) : 0} hs<br>
+      • Viático: ${reg.viatico ? 'Sí' : 'No'}
+    `;
+  }
+</script>
+
+</body>
+</html>
