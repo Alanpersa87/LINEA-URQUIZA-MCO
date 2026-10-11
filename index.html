@@ -360,14 +360,14 @@
       </div>
 
       <div class="summary-box">
-        <div><strong>Tipo de Servicio:</strong> <span id="tipo_servicio">Servicio Local</span></div>
-        <div><strong>Horas Trabajadas:</strong> <span id="horas_trabajadas">0 hs</span></div>
-        <div><strong>Horas Extras Viaje:</strong> <span id="horas_extras">0 hs</span></div>
-        <div><strong>Viático Computable:</strong> <span id="viatico_status">No aplica</span></div>
+        <div><strong>Estado del Servicio:</strong> <span id="tipo_servicio">Servicio Local</span></div>
+        <div><strong>Horas Foja Actual:</strong> <span id="horas_trabajadas">0 hs</span></div>
+        <div><strong>Horas Extras Foja:</strong> <span id="horas_extras">0 hs</span></div>
+        <div><strong>Viático (Acumulado Ciclo):</strong> <span id="viatico_status">Pendiente de cierre de ciclo</span></div>
       </div>
     </div>
 
-    <button type="button" class="btn-save" onclick="guardarRegistro()">Guardar y Reiniciar Formulario</button>
+    <button type="button" class="btn-save" onclick="guardarRegistro()">Guardar Foja y Reiniciar</button>
     <button type="button" class="btn-reset" onclick="reiniciarFormulario()">Limpiar Formulario</button>
   </form>
 
@@ -376,7 +376,7 @@
   <h2>Historial Detallado de Fojas</h2>
   <div class="summary-box">
     <div><strong>Total Horas Extras Acumuladas:</strong> <span id="total_horas_extras">0.00 hs</span></div>
-    <div><strong>Total Viáticos Computados:</strong> <span id="total_viaticos">0</span></div>
+    <div><strong>Total Días de Viático Liquidados (24hs):</strong> <span id="total_viaticos">0.00 días</span></div>
   </div>
 
   <div id="historial_container" style="margin-top: 15px;"></div>
@@ -390,7 +390,7 @@
     </div>
     <div class="legend">
       <span><span class="badge" style="background:#d4edda;"></span> Servicio Local</span>
-      <span><span class="badge" style="background:#ffe8d6;"></span> Viático / Viaje</span>
+      <span><span class="badge" style="background:#ffe8d6;"></span> Viático / En Viaje</span>
     </div>
     <div class="calendar-grid" id="gridCalendario"></div>
     <div id="detalleDia" style="margin-top: 15px; font-size:0.85em;" class="summary-box">
@@ -574,13 +574,13 @@
     const lugarDejada = document.getElementById('lugar_dejada').value;
 
     const esLocal = (lugarTomada === 'Concordia' && lugarDejada === 'Concordia');
-    document.getElementById('tipo_servicio').innerText = esLocal ? "Servicio Local (Residencia)" : "Servicio Fuera de Base";
 
     if (!tomadaVal || !dejadaVal) {
+      document.getElementById('tipo_servicio').innerText = esLocal ? "Servicio Local" : "Viaje en Curso / Fuera de Base";
       document.getElementById('horas_trabajadas').innerText = "0 hs";
       document.getElementById('horas_extras').innerText = "0 hs";
-      document.getElementById('viatico_status').innerText = "No aplica";
-      return { horasExtras: 0, viatico: false, esLocal };
+      document.getElementById('viatico_status').innerText = "Incompleto";
+      return { horasExtras: 0, viaticoDias: 0, esLocal, esCierreCiclo: false };
     }
 
     const tomada = new Date(tomadaVal);
@@ -589,23 +589,52 @@
 
     if (diffMs <= 0) {
       document.getElementById('horas_trabajadas').innerText = "Error fechas";
-      return { horasExtras: 0, viatico: false, esLocal };
+      return { horasExtras: 0, viaticoDias: 0, esLocal, esCierreCiclo: false };
     }
 
     const totalHoras = diffMs / (1000 * 60 * 60);
     const horasExtras = totalHoras > 8 ? (totalHoras - 8) : 0;
 
-    let viatico = false;
-    // Viático por servicio local excediendo 20 hs o servicio fuera de base completo
-    if ((lugarTomada === 'Concordia' && lugarDejada === 'Concordia' && totalHoras >= 20) || !esLocal) {
-      viatico = true;
-    }
-
     document.getElementById('horas_trabajadas').innerText = totalHoras.toFixed(2) + " hs";
     document.getElementById('horas_extras').innerText = horasExtras.toFixed(2) + " hs";
-    document.getElementById('viatico_status').innerText = viatico ? "Sí (Aplica Viático)" : "No";
 
-    return { horasExtras, viatico, totalHoras, esLocal };
+    // EVALUACIÓN DE VIÁTICOS ACUMULADOS POR CICLO
+    let viaticoDias = 0;
+    let esCierreCiclo = false;
+
+    if (lugarDejada === 'Concordia') {
+      if (lugarTomada !== 'Concordia') {
+        // Cierre de viaje fuera de base. Buscar inicio del ciclo.
+        esCierreCiclo = true;
+        const fojaInicio = [...registrosGuardados].reverse().find(r => r.lugar_tomada === 'Concordia' && r.lugar_dejada !== 'Concordia');
+        if (fojaInicio) {
+          const inicioCiclo = new Date(fojaInicio.tomada_servicio);
+          const totalCicloMs = dejada - inicioCiclo;
+          const totalHorasCiclo = totalCicloMs / (1000 * 60 * 60);
+          viaticoDias = totalHorasCiclo / 24;
+          document.getElementById('tipo_servicio').innerText = "Cierre de Viaje Fuera de Base";
+          document.getElementById('viatico_status').innerText = `${viaticoDias.toFixed(2)} Días (${totalHorasCiclo.toFixed(1)} hs acumuladas)`;
+        } else {
+          document.getElementById('tipo_servicio').innerText = "Cierre de Regreso a Base";
+          document.getElementById('viatico_status').innerText = "1.00 Día (Tramo directo)";
+          viaticoDias = 1.0;
+        }
+      } else {
+        // Local Concordia
+        document.getElementById('tipo_servicio').innerText = "Servicio Local (Concordia)";
+        if (totalHoras >= 20) {
+          viaticoDias = totalHoras / 24;
+          document.getElementById('viatico_status').innerText = `${viaticoDias.toFixed(2)} Días (Supera 20hs local)`;
+        } else {
+          document.getElementById('viatico_status').innerText = "No aplica (Local < 20hs)";
+        }
+      }
+    } else {
+      document.getElementById('tipo_servicio').innerText = "Salida / Tramo Fuera de Base";
+      document.getElementById('viatico_status').innerText = "Abierto (Acumula al regresar a Concordia)";
+    }
+
+    return { horasExtras, viaticoDias, esLocal, esCierreCiclo };
   }
 
   function guardarRegistro() {
@@ -616,7 +645,7 @@
     }
 
     const fechaStr = tomadaVal.split('T')[0];
-    const { horasExtras, viatico, esLocal } = calcularServicio();
+    const { horasExtras, viaticoDias, esLocal, esCierreCiclo } = calcularServicio();
     const auvs = Array.from(document.querySelectorAll('.auv_val')).map(i => i.value).filter(v => v);
     const tramo = document.getElementById('tramo_select').value;
     const estacionesCorrida = tramos[tramo].map(est => {
@@ -644,8 +673,9 @@
       orden_trabajo: document.getElementById('orden_trabajo').value,
       ultimo_vehiculo: document.getElementById('ultimo_vehiculo').value,
       horas_extras: horasExtras,
-      viatico: viatico,
+      viatico_dias: viaticoDias,
       esLocal: esLocal,
+      esCierreCiclo: esCierreCiclo,
       auvs: auvs,
       estaciones: estacionesCorrida,
       observaciones: document.getElementById('observaciones').value
@@ -654,7 +684,7 @@
     registrosGuardados.push(registro);
     localStorage.setItem('registros_trenes', JSON.stringify(registrosGuardados));
 
-    alert("Registro guardado con éxito.");
+    alert("Foja guardada exitosamente.");
     reiniciarFormulario();
     actualizarHistorialYAcumulados();
   }
@@ -678,11 +708,11 @@
     container.innerHTML = '';
 
     let totalExtras = 0;
-    let totalViaticosCount = 0;
+    let totalViaticosDias = 0;
 
     registrosGuardados.forEach((reg, index) => {
       totalExtras += reg.horas_extras || 0;
-      if (reg.viatico) totalViaticosCount++;
+      totalViaticosDias += reg.viatico_dias || 0;
 
       let estacionesHtml = reg.estaciones.map(e => `${e.estacion}: ${e.hora || '--:--'}`).join(' | ');
       let auvsHtml = reg.auvs.length > 0 ? reg.auvs.join(', ') : 'Ninguna';
@@ -691,27 +721,27 @@
       div.className = 'history-card';
       div.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ddd; padding-bottom:4px; margin-bottom:6px;">
-          <strong>Foja #${index + 1} - Fecha: ${reg.fecha}</strong>
+          <strong>Foja #${index + 1} - ${reg.fecha}</strong>
           <button type="button" style="background:#dc3545; padding:2px 6px; font-size:0.8em;" onclick="eliminarRegistro(${reg.id})">Eliminar</button>
         </div>
         <div><strong>Tomada:</strong> ${reg.lugar_tomada} (${reg.tomada_servicio.replace('T', ' ')})</div>
         <div><strong>Dejada:</strong> ${reg.lugar_dejada} (${reg.dejada_servicio ? reg.dejada_servicio.replace('T', ' ') : 'En curso'})</div>
-        <div><strong>Tren:</strong> ${reg.tren_prefijo} | <strong>Locomotora:</strong> ${reg.locomotora}</div>
-        <div><strong>Maquinista:</strong> ${reg.maquinista} (${reg.legajo_maquinista}) | <strong>Jefe:</strong> ${reg.jefe_tren} (${reg.legajo_jefe})</div>
+        <div><strong>Tren:</strong> ${reg.tren_prefijo} | <strong>Loc:</strong> ${reg.locomotora}</div>
+        <div><strong>Personal:</strong> Maq: ${reg.maquinista} (${reg.legajo_maquinista}) | Jefe: ${reg.jefe_tren} (${reg.legajo_jefe})</div>
         <div><strong>AUV:</strong> ${auvsHtml}</div>
         <div style="margin: 4px 0; font-size: 0.85em; background: #f1f3f5; padding: 4px; border-radius: 4px;"><strong>Estaciones:</strong> ${estacionesHtml}</div>
-        <div><strong>Hs Extras:</strong> ${reg.horas_extras ? reg.horas_extras.toFixed(2) : 0} hs | <strong>Viático:</strong> ${reg.viatico ? 'Sí' : 'No'}</div>
+        <div><strong>Hs Extras:</strong> ${reg.horas_extras ? reg.horas_extras.toFixed(2) : 0} hs | <strong>Viático Computado:</strong> ${reg.viatico_dias ? reg.viatico_dias.toFixed(2) + ' días' : 'Pendiente / No aplica'}</div>
         ${reg.observaciones ? `<div><strong>Obs:</strong> ${reg.observaciones}</div>` : ''}
       `;
       container.appendChild(div);
     });
 
     document.getElementById('total_horas_extras').innerText = totalExtras.toFixed(2) + " hs";
-    document.getElementById('total_viaticos').innerText = totalViaticosCount;
+    document.getElementById('total_viaticos').innerText = totalViaticosDias.toFixed(2) + " días";
   }
 
   function eliminarRegistro(id) {
-    if(confirm("¿Seguro deseas eliminar este registro?")) {
+    if(confirm("¿Seguro deseas eliminar esta foja?")) {
       registrosGuardados = registrosGuardados.filter(r => r.id !== id);
       localStorage.setItem('registros_trenes', JSON.stringify(registrosGuardados));
       actualizarHistorialYAcumulados();
@@ -761,7 +791,7 @@
       cell.innerText = d;
 
       if (reg) {
-        if (reg.viatico) {
+        if (reg.viatico_dias > 0) {
           cell.classList.add('day-viatico');
         } else if (reg.esLocal) {
           cell.classList.add('day-local');
@@ -778,9 +808,9 @@
     box.innerHTML = `
       <strong>Fecha: ${reg.fecha}</strong><br>
       • Tren: ${reg.tren_prefijo} (Loc: ${reg.locomotora})<br>
-      • Tipo: ${reg.esLocal ? 'Servicio Local' : 'Fuera de Base'}<br>
+      • Tomada: ${reg.lugar_tomada} -> Dejada: ${reg.lugar_dejada}<br>
       • Hs Extras: ${reg.horas_extras ? reg.horas_extras.toFixed(2) : 0} hs<br>
-      • Viático: ${reg.viatico ? 'Sí' : 'No'}
+      • Viático Computado: ${reg.viatico_dias ? reg.viatico_dias.toFixed(2) + ' días' : 'Pendiente / No aplica'}
     `;
   }
 </script>
