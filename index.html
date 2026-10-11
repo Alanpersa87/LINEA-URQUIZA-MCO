@@ -595,7 +595,9 @@
 
     document.getElementById('horas_trabajadas').innerText = totalHoras.toFixed(2) + " hs";
     document.getElementById('horas_extras').innerText = horasExtras.toFixed(2) + " hs";
-    document.getElementById('tipo_servicio').innerText = (lugarTomada === 'Concordia' && lugarDejada === 'Concordia') ? "Servicio Local" : "Servicio Fuera de Residencia";
+    
+    const esLocal = (lugarTomada === 'Concordia' && lugarDejada === 'Concordia');
+    document.getElementById('tipo_servicio').innerText = esLocal ? "Servicio Local" : "Servicio Fuera de Residencia";
 
     return { horasExtras };
   }
@@ -663,21 +665,20 @@
     calcularServicio();
   }
 
-  // RECALCULO GENERAL DE CICLOS DE VIÁTICOS
   function recalcularTodo() {
-    // Ordenar cronológicamente por tomada de servicio
     registrosGuardados.sort((a,b) => new Date(a.tomada_servicio) - new Date(b.tomada_servicio));
 
     let inicioCiclo = null;
 
     registrosGuardados.forEach(reg => {
-      // Si sale de Concordia y va afuera, se abre el ciclo
+      const esLocal = (reg.lugar_tomada === 'Concordia' && reg.lugar_dejada === 'Concordia');
+      reg.esLocal = esLocal;
+
       if (reg.lugar_tomada === 'Concordia' && reg.lugar_dejada !== 'Concordia') {
         inicioCiclo = new Date(reg.tomada_servicio);
         reg.viatico_dias = 0;
         reg.estado_ciclo = "En Viaje (Abierto)";
       } 
-      // Si regresa a Concordia viniendo de afuera, se cierra el ciclo y se computan las horas totales
       else if (reg.lugar_tomada !== 'Concordia' && reg.lugar_dejada === 'Concordia') {
         const finCiclo = new Date(reg.dejada_servicio);
         if (inicioCiclo && finCiclo > inicioCiclo) {
@@ -686,16 +687,14 @@
           reg.viatico_dias = totalHs / 24;
           reg.horas_ciclo = totalHs;
           reg.estado_ciclo = `Cierre Ciclo (${totalHs.toFixed(1)} hs totales)`;
-          inicioCiclo = null; // Reiniciar ciclo
+          inicioCiclo = null;
         } else {
-          // Si no hay foja previa de salida registrada
           const hsFoja = (new Date(reg.dejada_servicio) - new Date(reg.tomada_servicio)) / (1000 * 60 * 60);
           reg.viatico_dias = hsFoja / 24;
           reg.estado_ciclo = "Regreso directo";
         }
       } 
-      // Servicio Local en Concordia
-      else if (reg.lugar_tomada === 'Concordia' && reg.lugar_dejada === 'Concordia') {
+      else if (esLocal) {
         const hsFoja = (new Date(reg.dejada_servicio) - new Date(reg.tomada_servicio)) / (1000 * 60 * 60);
         if (hsFoja >= 20) {
           reg.viatico_dias = hsFoja / 24;
@@ -801,10 +800,12 @@
       cell.innerText = d;
 
       if (reg) {
-        if (reg.viatico_dias > 0) {
-          cell.classList.add('day-viatico');
-        } else {
+        // SERVICIO LOCAL ES SOLO SI TOMÓ Y DEJÓ EN CONCORDIA
+        if (reg.esLocal) {
           cell.classList.add('day-local');
+        } else {
+          // TODO LO DEMÁS ES VIÁTICO / EN VIAJE (NARANJA)
+          cell.classList.add('day-viatico');
         }
         cell.onclick = () => mostrarDetalleDia(reg);
       }
