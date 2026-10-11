@@ -229,15 +229,9 @@
       <div class="section-title">1. Datos Generales y Tomada de Servicio</div>
       <div class="row">
         <div class="col">
-          <label>Fecha:</label>
-          <input type="date" id="fecha" required>
+          <label>Tomada de Servicio (Fecha y Hora):</label>
+          <input type="datetime-local" id="tomada_servicio" onchange="calcularServicio()" required>
         </div>
-        <div class="col">
-          <label>Hora:</label>
-          <input type="text" id="hora" placeholder="HH:MM" maxlength="5" oninput="formatearHoraInputGeneral(this)">
-        </div>
-      </div>
-      <div class="row">
         <div class="col">
           <label>Lugar Tomada Servicio:</label>
           <select id="lugar_tomada" onchange="calcularServicio()">
@@ -246,10 +240,6 @@
             <option value="Basavilbaso">Basavilbaso</option>
             <option value="Otro">Otro</option>
           </select>
-        </div>
-        <div class="col">
-          <label>Tomada de Servicio:</label>
-          <input type="datetime-local" id="tomada_servicio" onchange="sincronizarFechaYTomada()">
         </div>
       </div>
       <div class="row">
@@ -447,25 +437,11 @@
     const fechaIso = ahora.toISOString().split('T')[0];
     const horaStr = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
     
-    document.getElementById('fecha').value = fechaIso;
-    document.getElementById('hora').value = horaStr;
     document.getElementById('tomada_servicio').value = fechaIso + 'T' + horaStr;
 
     cargarEstaciones();
     actualizarHistorialYAcumulados();
   };
-
-  function sincronizarFechaYTomada() {
-    const tomadaVal = document.getElementById('tomada_servicio').value;
-    if (tomadaVal) {
-      const partes = tomadaVal.split('T');
-      document.getElementById('fecha').value = partes[0];
-      if (partes[1]) {
-        document.getElementById('hora').value = partes[1];
-      }
-    }
-    calcularServicio();
-  }
 
   function formatearHoraInputGeneral(input) {
     let val = input.value.replace(/[^0-9]/g, '');
@@ -623,3 +599,25 @@
       document.getElementById('horas_trabajadas').innerText = "Error fechas";
       return { horasExtras: 0, viatico: false, esLocal };
     }
+
+    const totalHoras = diffMs / (1000 * 60 * 60);
+    const horasExtras = totalHoras > 8 ? (totalHoras - 8) : 0;
+
+    let viatico = false;
+    if (lugarTomada === 'Concordia' && lugarDejada === 'Concordia' && totalHoras >= 20) {
+      viatico = true;
+    }
+
+    document.getElementById('horas_trabajadas').innerText = totalHoras.toFixed(2) + " hs";
+    document.getElementById('horas_extras').innerText = horasExtras.toFixed(2) + " hs";
+    document.getElementById('viatico_status').innerText = viatico ? "Sí (Supera 20hs)" : "No";
+
+    return { horasExtras, viatico, totalHoras, esLocal };
+  }
+
+  function guardarRegistro() {
+    const tomadaVal = document.getElementById('tomada_servicio').value;
+    if (!tomadaVal) {
+      alert("Por favor ingresa la tomada de servicio.");
+      return;
+   
