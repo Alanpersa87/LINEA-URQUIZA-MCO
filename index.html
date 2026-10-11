@@ -234,7 +234,7 @@
         </div>
         <div class="col">
           <label>Hora:</label>
-          <input type="time" id="hora" required>
+          <input type="text" id="hora" placeholder="HH:MM" maxlength="5" oninput="formatearHoraInputGeneral(this)">
         </div>
       </div>
       <div class="row">
@@ -249,7 +249,7 @@
         </div>
         <div class="col">
           <label>Tomada de Servicio:</label>
-          <input type="datetime-local" id="tomada_servicio" onchange="calcularServicio()">
+          <input type="datetime-local" id="tomada_servicio" onchange="sincronizarFechaYTomada()">
         </div>
       </div>
       <div class="row">
@@ -259,7 +259,7 @@
         </div>
         <div class="col">
           <label>Legajo Maq.:</label>
-          <input type="text" id="legajo_maquinista" placeholder="N° Legajo" required>
+          <input type="number" id="legajo_maquinista" placeholder="N° Legajo" required>
         </div>
       </div>
       <div class="row">
@@ -269,7 +269,7 @@
         </div>
         <div class="col">
           <label>Legajo Jefe:</label>
-          <input type="text" id="legajo_jefe" placeholder="N° Legajo" required>
+          <input type="number" id="legajo_jefe" placeholder="N° Legajo" required>
         </div>
       </div>
     </div>
@@ -279,11 +279,11 @@
       <div class="row">
         <div class="col">
           <label>Tren (Prefijo):</label>
-          <input type="text" id="tren_prefijo" placeholder="Ej: 5001" required>
+          <input type="number" id="tren_prefijo" placeholder="Ej: 5001" required>
         </div>
         <div class="col">
           <label>Locomotora:</label>
-          <input type="text" id="locomotora" placeholder="N° Locomotora" required>
+          <input type="number" id="locomotora" placeholder="N° Locomotora" required>
         </div>
       </div>
       <div class="row">
@@ -444,11 +444,38 @@
 
   window.onload = function() {
     const ahora = new Date();
-    document.getElementById('fecha').value = ahora.toISOString().split('T')[0];
-    document.getElementById('hora').value = ahora.toTimeString().slice(0,5);
+    const fechaIso = ahora.toISOString().split('T')[0];
+    const horaStr = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
+    
+    document.getElementById('fecha').value = fechaIso;
+    document.getElementById('hora').value = horaStr;
+    document.getElementById('tomada_servicio').value = fechaIso + 'T' + horaStr;
+
     cargarEstaciones();
     actualizarHistorialYAcumulados();
   };
+
+  function sincronizarFechaYTomada() {
+    const tomadaVal = document.getElementById('tomada_servicio').value;
+    if (tomadaVal) {
+      const partes = tomadaVal.split('T');
+      document.getElementById('fecha').value = partes[0];
+      if (partes[1]) {
+        document.getElementById('hora').value = partes[1];
+      }
+    }
+    calcularServicio();
+  }
+
+  function formatearHoraInputGeneral(input) {
+    let val = input.value.replace(/[^0-9]/g, '');
+    if (val.length > 4) val = val.slice(0, 4);
+    if (val.length >= 3) {
+      input.value = val.slice(0, 2) + ':' + val.slice(2);
+    } else {
+      input.value = val;
+    }
+  }
 
   function agregarAUV() {
     const container = document.getElementById('auv_container');
@@ -596,176 +623,3 @@
       document.getElementById('horas_trabajadas').innerText = "Error fechas";
       return { horasExtras: 0, viatico: false, esLocal };
     }
-
-    const totalHoras = diffMs / (1000 * 60 * 60);
-    const horasExtras = totalHoras > 8 ? (totalHoras - 8) : 0;
-
-    let viatico = false;
-    if (lugarTomada === 'Concordia' && lugarDejada === 'Concordia' && totalHoras >= 20) {
-      viatico = true;
-    }
-
-    document.getElementById('horas_trabajadas').innerText = totalHoras.toFixed(2) + " hs";
-    document.getElementById('horas_extras').innerText = horasExtras.toFixed(2) + " hs";
-    document.getElementById('viatico_status').innerText = viatico ? "Sí (Supera 20hs)" : "No";
-
-    return { horasExtras, viatico, totalHoras, esLocal };
-  }
-
-  function guardarRegistro() {
-    const fecha = document.getElementById('fecha').value;
-    if (!fecha) {
-      alert("Por favor ingresa la fecha.");
-      return;
-    }
-
-    const { horasExtras, viatico, esLocal } = calcularServicio();
-    const auvs = Array.from(document.querySelectorAll('.auv_val')).map(i => i.value).filter(v => v);
-    const tramo = document.getElementById('tramo_select').value;
-    const estacionesCorrida = tramos[tramo].map(est => {
-      return { estacion: est, hora: document.getElementById('est_' + est).value };
-    });
-
-    const registro = {
-      id: Date.now(),
-      fecha: fecha,
-      hora: document.getElementById('hora').value,
-      maquinista: document.getElementById('maquinista').value,
-      legajo_maquinista: document.getElementById('legajo_maquinista').value,
-      jefe_tren: document.getElementById('jefe_tren').value,
-      legajo_jefe: document.getElementById('legajo_jefe').value,
-      tren_prefijo: document.getElementById('tren_prefijo').value,
-      locomotora: document.getElementById('locomotora').value,
-      toneladas: document.getElementById('toneladas').value,
-      longitud: document.getElementById('longitud').value,
-      vagones_vacios: document.getElementById('vagones_vacios').value,
-      vagones_cargados: document.getElementById('vagones_cargados').value,
-      eot: document.getElementById('eot').value,
-      orden_trabajo: document.getElementById('orden_trabajo').value,
-      ultimo_vehiculo: document.getElementById('ultimo_vehiculo').value,
-      lugar_tomada: document.getElementById('lugar_tomada').value,
-      tomada_servicio: document.getElementById('tomada_servicio').value,
-      lugar_dejada: document.getElementById('lugar_dejada').value,
-      dejada_servicio: document.getElementById('dejada_servicio').value,
-      horas_extras: horasExtras,
-      viatico: viatico,
-      esLocal: esLocal,
-      auvs: auvs,
-      estaciones: estacionesCorrida,
-      observaciones: document.getElementById('observaciones').value
-    };
-
-    registrosGuardados.push(registro);
-    localStorage.setItem('registros_trenes', JSON.stringify(registrosGuardados));
-
-    alert("Registro guardado con éxito.");
-    reiniciarFormulario();
-    actualizarHistorialYAcumulados();
-  }
-
-  function reiniciarFormulario() {
-    document.getElementById('registroForm').reset();
-    document.getElementById('auv_container').innerHTML = '';
-    
-    const ahora = new Date();
-    document.getElementById('fecha').value = ahora.toISOString().split('T')[0];
-    document.getElementById('hora').value = ahora.toTimeString().slice(0,5);
-    
-    cargarEstaciones();
-    calcularServicio();
-  }
-
-  function actualizarHistorialYAcumulados() {
-    const container = document.getElementById('historial_container');
-    container.innerHTML = '';
-
-    let totalExtras = 0;
-    let totalViaticosCount = 0;
-
-    registrosGuardados.forEach(reg => {
-      totalExtras += reg.horas_extras || 0;
-      if (reg.viatico) totalViaticosCount++;
-
-      const div = document.createElement('div');
-      div.className = 'history-card';
-      div.innerHTML = `
-        <strong>Fecha:</strong> ${reg.fecha} - <strong>Tren:</strong> ${reg.tren_prefijo} (Loc: ${reg.locomotora})<br>
-        <strong>Servicio:</strong> ${reg.esLocal ? 'Local (Concordia)' : 'Fuera de Base'}<br>
-        <strong>Hs Extras:</strong> ${reg.horas_extras ? reg.horas_extras.toFixed(2) : 0} hs | <strong>Viático:</strong> ${reg.viatico ? 'Sí' : 'No'}
-      `;
-      container.appendChild(div);
-    });
-
-    document.getElementById('total_horas_extras').innerText = totalExtras.toFixed(2) + " hs";
-    document.getElementById('total_viaticos').innerText = totalViaticosCount;
-  }
-
-  function abrirCalendario() {
-    document.getElementById('modalCalendario').style.display = 'flex';
-    renderCalendario();
-  }
-
-  function cerrarCalendario() {
-    document.getElementById('modalCalendario').style.display = 'none';
-  }
-
-  function renderCalendario() {
-    const grid = document.getElementById('gridCalendario');
-    grid.innerHTML = '';
-
-    const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    diasSemana.forEach(d => {
-      const h = document.createElement('div');
-      h.className = 'cal-header';
-      h.innerText = d;
-      grid.appendChild(h);
-    });
-
-    const ahora = new Date();
-    const anio = ahora.getFullYear();
-    const mes = ahora.getMonth();
-
-    const primerDia = new Date(anio, mes, 1).getDay();
-    const totalDias = new Date(anio, mes + 1, 0).getDate();
-
-    for (let i = 0; i < primerDia; i++) {
-      const empty = document.createElement('div');
-      empty.className = 'cal-day empty';
-      grid.appendChild(empty);
-    }
-
-    for (let d = 1; d <= totalDias; d++) {
-      const fechaStr = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const reg = registrosGuardados.find(r => r.fecha === fechaStr);
-
-      const cell = document.createElement('div');
-      cell.className = 'cal-day';
-      cell.innerText = d;
-
-      if (reg) {
-        if (reg.viatico) {
-          cell.classList.add('day-viatico');
-        } else if (reg.esLocal) {
-          cell.classList.add('day-local');
-        }
-        cell.onclick = () => mostrarDetalleDia(reg);
-      }
-
-      grid.appendChild(cell);
-    }
-  }
-
-  function mostrarDetalleDia(reg) {
-    const box = document.getElementById('detalleDia');
-    box.innerHTML = `
-      <strong>Fecha: ${reg.fecha}</strong><br>
-      • Tren: ${reg.tren_prefijo} (Loc: ${reg.locomotora})<br>
-      • Tipo: ${reg.esLocal ? 'Servicio Local' : 'Fuera de Base'}<br>
-      • Hs Extras: ${reg.horas_extras ? reg.horas_extras.toFixed(2) : 0} hs<br>
-      • Viático: ${reg.viatico ? 'Sí' : 'No'}
-    `;
-  }
-</script>
-
-</body>
-</html>
