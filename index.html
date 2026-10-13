@@ -6,16 +6,19 @@
   <title>Registro de Trenes - Línea Urquiza</title>
   <style>
     :root {
-      --primary-color: #0056b3;
+      --primary-color: #4da8da;
       --secondary-color: #28a745;
-      --bg-color: #f4f6f9;
-      --card-bg: #ffffff;
-      --text-color: #333333;
-      --border-color: #cccccc;
+      --bg-overlay: rgba(15, 23, 42, 0.82);
+      --card-bg: rgba(26, 38, 57, 0.75);
+      --text-color: #f1f5f9;
+      --border-color: rgba(255, 255, 255, 0.2);
     }
     body {
       font-family: Arial, sans-serif;
-      background-color: var(--bg-color);
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><rect width="100%" height="100%" fill="%230b131f"/><text x="50%" y="95%" font-size="44" fill="rgba(255,255,255,0.15)" font-family="sans-serif" font-weight="bold" text-anchor="middle">ALÁN</text></svg>');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
       color: var(--text-color);
       margin: 0;
       padding: 12px;
@@ -23,11 +26,12 @@
     .container {
       max-width: 600px;
       margin: 0 auto;
-      background: var(--card-bg);
+      background: var(--bg-overlay);
       padding: 16px;
       border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
       position: relative;
+      backdrop-filter: blur(4px);
     }
     .header-bar {
       display: flex;
@@ -47,6 +51,7 @@
       display: flex;
       align-items: center;
       gap: 4px;
+      font-weight: bold;
     }
     h1, h2 {
       text-align: center;
@@ -58,7 +63,8 @@
       border-radius: 6px;
       padding: 12px;
       margin-bottom: 16px;
-      background-color: #fafafa;
+      background-color: var(--card-bg);
+      backdrop-filter: blur(2px);
     }
     .section-title {
       font-weight: bold;
@@ -84,6 +90,7 @@
       font-size: 0.85em;
       font-weight: bold;
       margin-bottom: 4px;
+      color: #cbd5e1;
     }
     input, select, textarea {
       padding: 8px;
@@ -92,10 +99,34 @@
       font-size: 0.95em;
       width: 100%;
       box-sizing: border-box;
+      background: rgba(15, 23, 42, 0.6);
+      color: #ffffff;
     }
+    input::placeholder, textarea::placeholder {
+      color: #94a3b8;
+    }
+    
+    /* Contenedor Arrastrable de Datos del Tren */
+    #train-data-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .draggable-field {
+      cursor: grab;
+      background: rgba(30, 41, 59, 0.7);
+      padding: 6px;
+      border: 1px dashed var(--primary-color);
+      border-radius: 4px;
+    }
+    .draggable-field:active {
+      cursor: grabbing;
+      background: rgba(51, 65, 85, 0.9);
+    }
+
     button {
       background-color: var(--primary-color);
-      color: white;
+      color: #0f172a;
       border: none;
       padding: 10px 14px;
       border-radius: 4px;
@@ -108,49 +139,76 @@
     }
     .btn-add {
       background-color: var(--secondary-color);
+      color: white;
       margin-top: 6px;
+      width: 100%;
     }
     .btn-save {
-      background-color: #007bff;
+      background-color: #3b82f6;
+      color: white;
       width: 100%;
       font-size: 1.1em;
       padding: 12px;
     }
     .btn-reset {
-      background-color: #dc3545;
+      background-color: #ef4444;
+      color: white;
       width: 100%;
       margin-top: 8px;
     }
-    .auv-item, .estacion-item {
+    .auv-item, .cruce-item, .estacion-item {
       display: flex;
       gap: 8px;
       align-items: center;
       margin-bottom: 8px;
     }
     .summary-box {
-      background-color: #e9ecef;
-      border: 1px solid #ced4da;
+      background-color: rgba(30, 41, 59, 0.8);
+      border: 1px solid var(--border-color);
       padding: 12px;
       border-radius: 6px;
       margin-top: 10px;
+      color: #e2e8f0;
     }
+    
+    /* Historial con Colores Solicitados y Estilo Transparente */
     .history-card {
-      background: #ffffff;
       border: 1px solid var(--border-color);
-      padding: 12px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       border-radius: 6px;
+      overflow: hidden;
       font-size: 0.9em;
     }
-
-    /* ESTILOS DE COLORES PARA EL HISTORIAL DETALLADO */
     .history-card.card-local {
-      background-color: #ffffff;
+      background-color: rgba(15, 23, 42, 0.75);
       border-left: 5px solid #28a745;
     }
     .history-card.card-viatico {
-      background-color: #e6f0fa;
-      border-left: 5px solid #0056b3;
+      background-color: rgba(13, 31, 60, 0.85);
+      border-left: 5px solid #3b82f6;
+    }
+
+    .history-header {
+      padding: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      color: var(--primary-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(30, 41, 59, 0.5);
+    }
+    .history-header:hover {
+      background: rgba(51, 65, 85, 0.7);
+    }
+    .history-details {
+      display: none;
+      padding: 12px;
+      border-top: 1px solid var(--border-color);
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .history-details.active {
+      display: block;
     }
 
     .modal {
@@ -161,18 +219,20 @@
       top: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0,0,0,0.5);
+      background-color: rgba(0,0,0,0.7);
       justify-content: center;
       align-items: center;
     }
     .modal-content {
-      background-color: white;
+      background-color: #1e293b;
+      color: #f1f5f9;
       padding: 16px;
       border-radius: 8px;
       width: 90%;
       max-width: 450px;
       max-height: 85vh;
       overflow-y: auto;
+      border: 1px solid var(--border-color);
     }
     .calendar-grid {
       display: grid;
@@ -183,32 +243,34 @@
     }
     .cal-header {
       font-weight: bold;
-      background: #eee;
+      background: #334155;
       padding: 6px;
       font-size: 0.8em;
+      color: #cbd5e1;
     }
     .cal-day {
-      border: 1px solid #ddd;
+      border: 1px solid #475569;
       padding: 8px 2px;
       min-height: 40px;
       font-size: 0.85em;
       border-radius: 4px;
       cursor: pointer;
+      background: rgba(15, 23, 42, 0.5);
     }
     .cal-day.empty {
-      background: #f9f9f9;
+      background: transparent;
       border: none;
     }
     .day-local {
-      background-color: #d4edda;
-      border-color: #c3e6cb;
-      color: #155724;
+      background-color: rgba(20, 83, 45, 0.7);
+      border-color: #22c55e;
+      color: #bbf7d0;
       font-weight: bold;
     }
     .day-viatico {
-      background-color: #ffe8d6;
-      border-color: #ffd8be;
-      color: #d97706;
+      background-color: rgba(30, 58, 138, 0.7);
+      border-color: #60a5fa;
+      color: #bfdbfe;
       font-weight: bold;
     }
     .legend {
@@ -226,14 +288,14 @@
     }
   </style>
 </head>
-<body>
+<body> 
 
 <div class="container">
   <div class="header-bar">
     <button type="button" class="btn-cal" onclick="abrirCalendario()">📅 Calendario</button>
-    <button type="button" class="btn-cal" style="background:#17a2b8;" onclick="abrirCalculadorTramos()">⏱️ Tiempos</button>
+    <button type="button" class="btn-cal" style="background:#0284c7;" onclick="abrirCalculadorTramos()">⏱️ Tiempos</button>
     <h1 style="font-size: 1.1em; margin:0;">Registro de Trenes</h1>
-  </div>
+  </div> 
 
   <form id="registroForm">
     <div class="section">
@@ -273,66 +335,68 @@
           <input type="number" id="legajo_jefe" placeholder="N° Legajo" required>
         </div>
       </div>
-    </div>
+    </div> 
 
+    <!-- 2. DATOS DEL TREN (REORGANIZABLES / DRAGGABLE) -->
     <div class="section">
-      <div class="section-title">2. Datos del Tren</div>
-      <div class="row">
-        <div class="col">
+      <div class="section-title">2. Datos del Tren (Arrastrables)</div>
+      <div id="train-data-container">
+        <div class="draggable-field" draggable="true">
           <label>Tren (Prefijo):</label>
           <input type="number" id="tren_prefijo" placeholder="Ej: 5001" required>
         </div>
-        <div class="col">
+        <div class="draggable-field" draggable="true">
           <label>Locomotora:</label>
           <input type="number" id="locomotora" placeholder="N° Locomotora" required>
         </div>
-      </div>
-      <div class="row">
-        <div class="col">
+        <div class="draggable-field" draggable="true">
           <label>Toneladas:</label>
           <input type="number" id="toneladas" placeholder="Tn">
         </div>
-        <div class="col">
+        <div class="draggable-field" draggable="true">
           <label>Longitud (m):</label>
           <input type="number" id="longitud" placeholder="Metros">
         </div>
-      </div>
-      <div class="row">
-        <div class="col">
+        <div class="draggable-field" draggable="true">
           <label>Vagones Vacíos:</label>
           <input type="number" id="vagones_vacios" value="0">
         </div>
-        <div class="col">
+        <div class="draggable-field" draggable="true">
           <label>Vagones Cargados:</label>
           <input type="number" id="vagones_cargados" value="0">
         </div>
-      </div>
-      <div class="row">
-        <div class="col">
+        <div class="draggable-field" draggable="true">
           <label>EOT:</label>
           <input type="number" id="eot" placeholder="N° EOT">
         </div>
-        <div class="col">
+        <div class="draggable-field" draggable="true">
           <label>Orden de Trabajo:</label>
           <input type="number" id="orden_trabajo" placeholder="N° OT">
         </div>
-      </div>
-      <div class="row">
-        <div class="col">
+        <div class="draggable-field" draggable="true">
           <label>Último Vehículo:</label>
           <input type="number" id="ultimo_vehiculo" placeholder="N° Vehículo">
         </div>
       </div>
-    </div>
+    </div> 
 
+    <!-- 3. AUV ALFANUMÉRICO -->
     <div class="section">
       <div class="section-title">3. Autorizaciones de Uso de Vía (AUV)</div>
       <div id="auv_container"></div>
       <button type="button" class="btn-add" onclick="agregarAUV()">+ Agregar AUV</button>
-    </div>
+    </div> 
 
+    <!-- 4. CRUCE DE TRENES -->
     <div class="section">
-      <div class="section-title">4. Corrida de Estaciones</div>
+      <div class="section-title">4. Cruce de Trenes</div>
+      <div id="cruce_container"></div>
+      <button type="button" class="btn-add" onclick="agregarCruce()">+ Agregar Cruce</button>
+    </div> 
+
+    <!-- 5. CORRIDA DE ESTACIONES -->
+    <div class="section">
+      <div class="section-title">5. Corrida de Estaciones</div>
       <div class="row">
         <div class="col">
           <label>Tramo:</label>
@@ -345,15 +409,17 @@
         </div>
       </div>
       <div id="estaciones_container"></div>
-    </div>
+    </div> 
 
+    <!-- 6. OBSERVACIONES -->
     <div class="section">
-      <div class="section-title">5. Observaciones</div>
+      <div class="section-title">6. Observaciones</div>
       <textarea id="observaciones" rows="4" placeholder="Anotaciones u observaciones del viaje..."></textarea>
-    </div>
+    </div> 
 
+    <!-- 7. DEJADA DE SERVICIO Y VIÁTICOS -->
     <div class="section">
-      <div class="section-title">6. Dejada de Servicio y Viáticos</div>
+      <div class="section-title">7. Dejada de Servicio y Viáticos</div>
       <div class="row">
         <div class="col">
           <label>Lugar Dejada Servicio:</label>
@@ -368,7 +434,7 @@
           <label>Dejada de Servicio:</label>
           <input type="datetime-local" id="dejada_servicio" onchange="calcularServicio()">
         </div>
-      </div>
+      </div> 
 
       <div class="summary-box">
         <div><strong>Estado del Servicio:</strong> <span id="tipo_servicio">Servicio Local</span></div>
@@ -376,45 +442,45 @@
         <div><strong>Horas Extras Foja:</strong> <span id="horas_extras">0 hs</span></div>
         <div><strong>Viático Computado:</strong> <span id="viatico_status">Pendiente</span></div>
       </div>
-    </div>
+    </div> 
 
     <button type="button" class="btn-save" onclick="guardarRegistro()">Guardar Foja y Recalcular</button>
     <button type="button" class="btn-reset" onclick="reiniciarFormulario()">Limpiar Formulario</button>
-  </form>
+  </form> 
 
-  <hr style="margin: 20px 0;">
+  <hr style="margin: 20px 0; border-color: var(--border-color);"> 
 
   <h2>Historial Detallado de Fojas</h2>
   <div class="summary-box">
     <div><strong>Total Horas Extras Acumuladas:</strong> <span id="total_horas_extras">0.00 hs</span></div>
     <div><strong>Total Días de Viático Liquidados (24hs):</strong> <span id="total_viaticos">0.00 días</span></div>
-  </div>
+  </div> 
 
   <div id="historial_container" style="margin-top: 15px;"></div>
-</div>
+</div> 
 
 <div id="modalCalendario" class="modal">
   <div class="modal-content">
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <h3 style="margin:0;">Calendario de Servicios</h3>
-      <button type="button" onclick="cerrarCalendario()" style="background:#dc3545;">X</button>
+      <button type="button" onclick="cerrarCalendario()" style="background:#ef4444; color:white;">X</button>
     </div>
     <div class="legend">
-      <span><span class="badge" style="background:#d4edda;"></span> Servicio Local</span>
-      <span><span class="badge" style="background:#ffe8d6;"></span> Viático / En Viaje</span>
+      <span><span class="badge" style="background:#22c55e;"></span> Servicio Local</span>
+      <span><span class="badge" style="background:#60a5fa;"></span> Viático / En Viaje</span>
     </div>
     <div class="calendar-grid" id="gridCalendario"></div>
     <div id="detalleDia" style="margin-top: 15px; font-size:0.85em;" class="summary-box">
       <em>Toca un día cargado para ver sus detalles.</em>
     </div>
   </div>
-</div>
+</div> 
 
 <div id="modalTramos" class="modal">
   <div class="modal-content">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
       <h3 style="margin:0;">Calcular Tiempo entre Estaciones</h3>
-      <button type="button" onclick="cerrarCalculadorTramos()" style="background:#dc3545;">X</button>
+      <button type="button" onclick="cerrarCalculadorTramos()" style="background:#ef4444; color:white;">X</button>
     </div>
     <div class="row">
       <div class="col">
@@ -427,11 +493,11 @@
       </div>
     </div>
     <div class="summary-box" style="text-align: center; margin-top: 15px;">
-      <div style="font-size: 0.9em; color: #555;">Tiempo de recorrido:</div>
+      <div style="font-size: 0.9em; color: #94a3b8;">Tiempo de recorrido:</div>
       <div id="resultado_tramo" style="font-size: 1.4em; font-weight: bold; color: var(--primary-color); margin-top: 5px;">--:-- hs</div>
     </div>
   </div>
-</div>
+</div> 
 
 <script>
   const tramos = {
@@ -439,37 +505,70 @@
     'MMK-MCO': ['MMK', 'MLE', 'MMO', 'MCH', 'MAN', 'MFE', 'MIS', 'MCR', 'MOM', 'MCO'],
     'MCO-MBA': ['MCO', 'MYU', 'MYE', 'MGC', 'MDA', 'MSS', 'MAA', 'MVE', 'MDO', 'MGU', 'MBA'],
     'MBA-MCO': ['MBA', 'MGU', 'MDO', 'MVE', 'MAA', 'MSS', 'MDA', 'MGC', 'MYE', 'MYU', 'MCO']
-  };
+  }; 
 
-  let registrosGuardados = JSON.parse(localStorage.getItem('registros_trenes')) || [];
+  let registrosGuardados = JSON.parse(localStorage.getItem('registros_trenes')) || []; 
 
   window.onload = function() {
     const ahora = new Date();
     const fechaIso = ahora.toISOString().split('T')[0];
     const horaStr = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
     
-    document.getElementById('tomada_servicio').value = fechaIso + 'T' + horaStr;
+    document.getElementById('tomada_servicio').value = fechaIso + 'T' + horaStr; 
 
     cargarEstaciones();
+    configurarDragAndDrop();
     recalcularTodo();
-  };
+  }; 
+
+  function configurarDragAndDrop() {
+    const container = document.getElementById('train-data-container');
+    let draggedElement = null; 
+
+    container.addEventListener('dragstart', (e) => {
+      draggedElement = e.target.closest('.draggable-field');
+      e.dataTransfer.effectAllowed = 'move';
+    }); 
+
+    container.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const target = e.target.closest('.draggable-field');
+      if (target && target !== draggedElement) {
+        const rect = target.getBoundingClientRect();
+        const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+        container.insertBefore(draggedElement, next ? target.nextSibling : target);
+      }
+    });
+  }
 
   function agregarAUV() {
     const container = document.getElementById('auv_container');
     const div = document.createElement('div');
     div.className = 'auv-item';
     div.innerHTML = `
-      <input type="number" placeholder="N° AUV" class="auv_val">
-      <button type="button" style="background:#dc3545;" onclick="this.parentElement.remove()">X</button>
+      <input type="text" placeholder="Código AUV (Ej: 5432mchp)" class="auv_val">
+      <button type="button" style="background:#ef4444; color:white;" onclick="this.parentElement.remove()">X</button>
     `;
     container.appendChild(div);
-  }
+  } 
+
+  function agregarCruce() {
+    const container = document.getElementById('cruce_container');
+    const div = document.createElement('div');
+    div.className = 'cruce-item';
+    div.innerHTML = `
+      <input type="text" placeholder="Patio de cruce" class="cruce-patio" style="flex:1;">
+      <input type="text" placeholder="Tren que cruza" class="cruce-tren" style="flex:1;">
+      <button type="button" style="background:#ef4444; color:white;" onclick="this.parentElement.remove()">X</button>
+    `;
+    container.appendChild(div);
+  } 
 
   function cargarEstaciones() {
     const tramo = document.getElementById('tramo_select').value;
     const lista = tramos[tramo];
     const container = document.getElementById('estaciones_container');
-    container.innerHTML = '';
+    container.innerHTML = ''; 
 
     lista.forEach(est => {
       const div = document.createElement('div');
@@ -477,12 +576,12 @@
       div.innerHTML = `
         <span style="width: 60px; font-weight: bold;">${est}:</span>
         <input type="text" id="est_${est}" placeholder="HH:MM" maxlength="5" oninput="formatearHoraInput(this)" onchange="actualizarSelectoresTramo()">
-        <button type="button" onclick="marcarHoraEstacion('est_${est}')">Hora Actual</button>
+        <button type="button" style="background:#334155; color:#f1f5f9;" onclick="marcarHoraEstacion('est_${est}')">Hora Actual</button>
       `;
       container.appendChild(div);
     });
     poblarSelectoresTramos();
-  }
+  } 
 
   function formatearHoraInput(input) {
     let val = input.value.replace(/[^0-9]/g, '');
@@ -493,7 +592,7 @@
       input.value = val;
     }
     actualizarSelectoresTramo();
-  }
+  } 
 
   function marcarHoraEstacion(id) {
     const ahora = new Date();
@@ -501,88 +600,88 @@
     const mm = String(ahora.getMinutes()).padStart(2, '0');
     document.getElementById(id).value = `${hh}:${mm}`;
     actualizarSelectoresTramo();
-  }
+  } 
 
   function poblarSelectoresTramos() {
     const tramo = document.getElementById('tramo_select').value;
     const lista = tramos[tramo];
     const selOrigen = document.getElementById('tramo_origen');
-    const selDestino = document.getElementById('tramo_destino');
+    const selDestino = document.getElementById('tramo_destino'); 
 
-    if (!selOrigen || !selDestino) return;
+    if (!selOrigen || !selDestino) return; 
 
     selOrigen.innerHTML = '';
-    selDestino.innerHTML = '';
+    selDestino.innerHTML = ''; 
 
     lista.forEach(est => {
       selOrigen.add(new Option(est, est));
       selDestino.add(new Option(est, est));
-    });
+    }); 
 
     if(lista.length > 1) selDestino.selectedIndex = 1;
     calcularTiempoTramo();
-  }
+  } 
 
   function abrirCalculadorTramos() {
     document.getElementById('modalTramos').style.display = 'flex';
     poblarSelectoresTramos();
-  }
+  } 
 
   function cerrarCalculadorTramos() {
     document.getElementById('modalTramos').style.display = 'none';
-  }
+  } 
 
   function calcularTiempoTramo() {
     const origen = document.getElementById('tramo_origen').value;
     const destino = document.getElementById('tramo_destino').value;
     const tramo = document.getElementById('tramo_select').value;
-    const lista = tramos[tramo];
+    const lista = tramos[tramo]; 
 
     const idxOrigen = lista.indexOf(origen);
     const idxDestino = lista.indexOf(destino);
-    const resBox = document.getElementById('resultado_tramo');
+    const resBox = document.getElementById('resultado_tramo'); 
 
     if (idxOrigen >= idxDestino) {
-      resBox.innerText = "Tramo inválido (Destino anterior u igual)";
+      resBox.innerText = "Tramo inválido";
       return;
-    }
+    } 
 
     const valOrigen = document.getElementById('est_' + origen).value;
-    const valDestino = document.getElementById('est_' + destino).value;
+    const valDestino = document.getElementById('est_' + destino).value; 
 
     if (!valOrigen || !valDestino || !valOrigen.includes(':') || !valDestino.includes(':')) {
-      resBox.innerText = "Formato HH:MM incompleto";
+      resBox.innerText = "Formato incompleto";
       return;
-    }
+    } 
 
     const [h1, m1] = valOrigen.split(':').map(Number);
-    const [h2, m2] = valDestino.split(':').map(Number);
+    const [h2, m2] = valDestino.split(':').map(Number); 
 
     let minutos1 = h1 * 60 + m1;
-    let minutos2 = h2 * 60 + m2;
+    let minutos2 = h2 * 60 + m2; 
 
     if (minutos2 < minutos1) {
       minutos2 += 24 * 60;
-    }
+    } 
 
     const diffMin = minutos2 - minutos1;
     const horasRes = Math.floor(diffMin / 60);
-    const minsRes = diffMin % 60;
+    const minsRes = diffMin % 60; 
 
     resBox.innerText = `${horasRes} hs ${minsRes} min`;
-  }
+  } 
 
   function actualizarSelectoresTramo() {
     if(document.getElementById('modalTramos').style.display === 'flex') {
       calcularTiempoTramo();
     }
-  }
+  } 
 
   function calcularServicio() {
     const tomadaVal = document.getElementById('tomada_servicio').value;
     const dejadaVal = document.getElementById('dejada_servicio').value;
     const lugarTomada = document.getElementById('lugar_tomada').value;
-    const lugarDejada = document.getElementById('lugar_dejada').value;
+    const lugarDejada = document.getElementById('lugar_dejada').value; 
 
     if (!tomadaVal || !dejadaVal) {
       document.getElementById('tipo_servicio').innerText = "Incompleto";
@@ -590,55 +689,54 @@
       document.getElementById('horas_extras').innerText = "0 hs";
       document.getElementById('viatico_status').innerText = "Pendiente";
       return { horasExtras: 0 };
-    }
+    } 
 
     const tomada = new Date(tomadaVal);
     const dejada = new Date(dejadaVal);
-    const diffMs = dejada - tomada;
+    const diffMs = dejada - tomada; 
 
     if (diffMs <= 0) {
       document.getElementById('horas_trabajadas').innerText = "Error fechas";
       return { horasExtras: 0 };
-    }
+    } 
 
     const totalHoras = diffMs / (1000 * 60 * 60);
-    const horasExtras = totalHoras > 8 ? (totalHoras - 8) : 0;
+    const horasExtras = totalHoras > 8 ? (totalHoras - 8) : 0; 
 
     document.getElementById('horas_trabajadas').innerText = totalHoras.toFixed(2) + " hs";
     document.getElementById('horas_extras').innerText = horasExtras.toFixed(2) + " hs";
     
     const esLocal = (lugarTomada === 'Concordia' && lugarDejada === 'Concordia');
-    document.getElementById('tipo_servicio').innerText = esLocal ? "Servicio Local" : "Servicio Fuera de Residencia";
+    document.getElementById('tipo_servicio').innerText = esLocal ? "Servicio Local" : "Servicio Fuera de Residencia"; 
 
     return { horasExtras };
-  }
+  } 
 
   function guardarRegistro() {
     const tomadaVal = document.getElementById('tomada_servicio').value;
-    const dejadaVal = document.getElementById('dejada_servicio').value;
-
     if (!tomadaVal) {
       alert("Por favor ingresa la tomada de servicio.");
       return;
-    }
-    if (!dejadaVal) {
-      alert("Por favor ingresa la dejada de servicio.");
-      return;
-    }
+    } 
 
     const fechaStr = tomadaVal.split('T')[0];
     const { horasExtras } = calcularServicio();
     const auvs = Array.from(document.querySelectorAll('.auv_val')).map(i => i.value).filter(v => v);
+    
+    const cruces = Array.from(document.querySelectorAll('.cruce-item')).map(i => {
+      return { patio: i.querySelector('.cruce-patio').value, tren: i.querySelector('.cruce-tren').value };
+    }).filter(c => c.patio || c.tren); 
+
     const tramo = document.getElementById('tramo_select').value;
     const estacionesCorrida = tramos[tramo].map(est => {
       return { estacion: est, hora: document.getElementById('est_' + est).value };
-    });
+    }); 
 
     const registro = {
       id: Date.now(),
       fecha: fechaStr,
       tomada_servicio: tomadaVal,
-      dejada_servicio: dejadaVal,
+      dejada_servicio: document.getElementById('dejada_servicio').value,
       lugar_tomada: document.getElementById('lugar_tomada').value,
       lugar_dejada: document.getElementById('lugar_dejada').value,
       maquinista: document.getElementById('maquinista').value,
@@ -657,20 +755,22 @@
       horas_extras: horasExtras,
       viatico_dias: 0,
       auvs: auvs,
+      cruces: cruces,
       estaciones: estacionesCorrida,
       observaciones: document.getElementById('observaciones').value
-    };
+    }; 
 
     registrosGuardados.push(registro);
-    recalcularTodo();
+    recalcularTodo(); 
 
     alert("Foja guardada exitosamente.");
     reiniciarFormulario();
-  }
+  } 
 
   function reiniciarFormulario() {
     document.getElementById('registroForm').reset();
     document.getElementById('auv_container').innerHTML = '';
+    document.getElementById('cruce_container').innerHTML = '';
     
     const ahora = new Date();
     const fechaIso = ahora.toISOString().split('T')[0];
@@ -680,16 +780,16 @@
     
     cargarEstaciones();
     calcularServicio();
-  }
+  } 
 
   function recalcularTodo() {
-    registrosGuardados.sort((a,b) => new Date(a.tomada_servicio) - new Date(b.tomada_servicio));
+    registrosGuardados.sort((a,b) => new Date(a.tomada_servicio) - new Date(b.tomada_servicio)); 
 
-    let inicioCiclo = null;
+    let inicioCiclo = null; 
 
     registrosGuardados.forEach(reg => {
       const esLocal = (reg.lugar_tomada === 'Concordia' && reg.lugar_dejada === 'Concordia');
-      reg.esLocal = esLocal;
+      reg.esLocal = esLocal; 
 
       if (reg.lugar_tomada === 'Concordia' && reg.lugar_dejada !== 'Concordia') {
         inicioCiclo = new Date(reg.tomada_servicio);
@@ -728,67 +828,79 @@
 
     localStorage.setItem('registros_trenes', JSON.stringify(registrosGuardados));
     actualizarHistorialYAcumulados();
-  }
+  } 
 
+  // Historial con colores diferenciados y diseño transparente
   function actualizarHistorialYAcumulados() {
     const container = document.getElementById('historial_container');
-    container.innerHTML = '';
+    container.innerHTML = ''; 
 
     let totalExtras = 0;
-    let totalViaticosDias = 0;
+    let totalViaticosDias = 0; 
 
-    registrosGuardados.forEach((reg, index) => {
+    registrosGuardados.slice().reverse().forEach((reg) => {
       totalExtras += reg.horas_extras || 0;
-      totalViaticosDias += reg.viatico_dias || 0;
+      totalViaticosDias += reg.viatico_dias || 0; 
 
-      let estacionesHtml = reg.estaciones.map(e => `${e.estacion}: ${e.hora || '--:--'}`).join(' | ');
-      let auvsHtml = reg.auvs.length > 0 ? reg.auvs.join(', ') : 'Ninguna';
+      const dateObj = new Date(reg.fecha + "T00:00:00");
+      const fechaFormateada = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }); 
 
-      const div = document.createElement('div');
-      
-      // APLICACIÓN DE COLORES AL HISTORIAL
-      div.className = reg.esLocal ? 'history-card card-local' : 'history-card card-viatico';
+      let estacionesHtml = reg.estaciones ? reg.estaciones.map(e => `${e.estacion}: ${e.hora || '--:--'}`).join(' | ') : '';
+      let auvsHtml = reg.auvs && reg.auvs.length > 0 ? reg.auvs.join(', ') : 'Ninguna';
+      let crucesHtml = reg.cruces && reg.cruces.length > 0 ? reg.cruces.map(c => `${c.patio} -> ${c.tren}`).join('; ') : 'Ninguno'; 
 
-      div.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ddd; padding-bottom:4px; margin-bottom:6px;">
-          <strong>Foja #${index + 1} - ${reg.fecha} (${reg.esLocal ? 'Servicio Local' : 'Viático'})</strong>
-          <button type="button" style="background:#dc3545; padding:2px 6px; font-size:0.8em;" onclick="eliminarRegistro(${reg.id})">Eliminar</button>
+      const card = document.createElement('div');
+      card.className = reg.esLocal ? 'history-card card-local' : 'history-card card-viatico';
+
+      card.innerHTML = `
+        <div class="history-header" onclick="toggleDetalle(${reg.id})">
+          <span>📅 ${fechaFormateada} (${reg.lugar_tomada} ➔ ${reg.lugar_dejada})</span>
+          <span style="font-size: 0.8em; opacity: 0.8;">Tocar para ver ▼</span>
         </div>
-        <div><strong>Tomada:</strong> ${reg.lugar_tomada} (${reg.tomada_servicio.replace('T', ' ')})</div>
-        <div><strong>Dejada:</strong> ${reg.lugar_dejada} (${reg.dejada_servicio ? reg.dejada_servicio.replace('T', ' ') : 'En curso'})</div>
-        <div><strong>Tren:</strong> ${reg.tren_prefijo} | <strong>Loc:</strong> ${reg.locomotora}</div>
-        <div><strong>Personal:</strong> Maq: ${reg.maquinista} (${reg.legajo_maquinista}) | Jefe: ${reg.jefe_tren} (${reg.legajo_jefe})</div>
-        <div><strong>AUV:</strong> ${auvsHtml}</div>
-        <div style="margin: 4px 0; font-size: 0.85em; background: #f1f3f5; padding: 4px; border-radius: 4px;"><strong>Estaciones:</strong> ${estacionesHtml}</div>
-        <div><strong>Hs Extras:</strong> ${reg.horas_extras ? reg.horas_extras.toFixed(2) : 0} hs | <strong>Viático Liquidador:</strong> <span style="color:#d97706; font-weight:bold;">${reg.viatico_dias ? reg.viatico_dias.toFixed(2) + ' días (' + (reg.horas_ciclo ? reg.horas_ciclo.toFixed(1) : 0) + ' hs ciclo)' : 'En Viaje / Pendiente'}</span></div>
-        ${reg.observaciones ? `<div><strong>Obs:</strong> ${reg.observaciones}</div>` : ''}
+        <div id="details-${reg.id}" class="history-details">
+          <div><strong>Tomada:</strong> ${reg.lugar_tomada} (${reg.tomada_servicio ? reg.tomada_servicio.replace('T', ' ') : '-'})</div>
+          <div><strong>Dejada:</strong> ${reg.lugar_dejada} (${reg.dejada_servicio ? reg.dejada_servicio.replace('T', ' ') : 'En curso'})</div>
+          <div><strong>Tren / Loc:</strong> ${reg.tren_prefijo || '-'} / ${reg.locomotora || '-'}</div>
+          <div><strong>Personal:</strong> Maq: ${reg.maquinista} (${reg.legajo_maquinista}) | Jefe: ${reg.jefe_tren} (${reg.legajo_jefe})</div>
+          <div><strong>AUV:</strong> ${auvsHtml}</div>
+          <div><strong>Cruces:</strong> ${crucesHtml}</div>
+          <div style="margin: 4px 0; font-size: 0.85em; background: rgba(30, 41, 59, 0.7); padding: 4px; border-radius: 4px;"><strong>Estaciones:</strong> ${estacionesHtml}</div>
+          <div><strong>Hs Extras:</strong> ${reg.horas_extras ? reg.horas_extras.toFixed(2) : 0} hs | <strong>Viático:</strong> <span style="color:#f59e0b; font-weight:bold;">${reg.viatico_dias ? reg.viatico_dias.toFixed(2) + ' días' : 'En Viaje / Pendiente'}</span></div>
+          ${reg.observaciones ? `<div><strong>Obs:</strong> ${reg.observaciones}</div>` : ''}
+          <button type="button" style="background:#ef4444; color:white; padding:4px 10px; margin-top:8px;" onclick="eliminarRegistro(${reg.id})">Eliminar Foja</button>
+        </div>
       `;
-      container.appendChild(div);
+      container.appendChild(card);
     });
 
     document.getElementById('total_horas_extras').innerText = totalExtras.toFixed(2) + " hs";
     document.getElementById('total_viaticos').innerText = totalViaticosDias.toFixed(2) + " días (" + (totalViaticosDias * 24).toFixed(1) + " hs)";
-  }
+  } 
+
+  function toggleDetalle(id) {
+    const el = document.getElementById(`details-${id}`);
+    el.classList.toggle("active");
+  } 
 
   function eliminarRegistro(id) {
     if(confirm("¿Seguro deseas eliminar esta foja?")) {
       registrosGuardados = registrosGuardados.filter(r => r.id !== id);
       recalcularTodo();
     }
-  }
+  } 
 
   function abrirCalendario() {
     document.getElementById('modalCalendario').style.display = 'flex';
     renderCalendario();
-  }
+  } 
 
   function cerrarCalendario() {
     document.getElementById('modalCalendario').style.display = 'none';
-  }
+  } 
 
   function renderCalendario() {
     const grid = document.getElementById('gridCalendario');
-    grid.innerHTML = '';
+    grid.innerHTML = ''; 
 
     const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     diasSemana.forEach(d => {
@@ -796,28 +908,28 @@
       h.className = 'cal-header';
       h.innerText = d;
       grid.appendChild(h);
-    });
+    }); 
 
     const ahora = new Date();
     const anio = ahora.getFullYear();
-    const mes = ahora.getMonth();
+    const mes = ahora.getMonth(); 
 
     const primerDia = new Date(anio, mes, 1).getDay();
-    const totalDias = new Date(anio, mes + 1, 0).getDate();
+    const totalDias = new Date(anio, mes + 1, 0).getDate(); 
 
     for (let i = 0; i < primerDia; i++) {
       const empty = document.createElement('div');
       empty.className = 'cal-day empty';
       grid.appendChild(empty);
-    }
+    } 
 
     for (let d = 1; d <= totalDias; d++) {
       const fechaStr = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const reg = registrosGuardados.find(r => r.fecha === fechaStr);
+      const reg = registrosGuardados.find(r => r.fecha === fechaStr); 
 
       const cell = document.createElement('div');
       cell.className = 'cal-day';
-      cell.innerText = d;
+      cell.innerText = d; 
 
       if (reg) {
         if (reg.esLocal) {
@@ -826,11 +938,11 @@
           cell.classList.add('day-viatico');
         }
         cell.onclick = () => mostrarDetalleDia(reg);
-      }
+      } 
 
       grid.appendChild(cell);
     }
-  }
+  } 
 
   function mostrarDetalleDia(reg) {
     const box = document.getElementById('detalleDia');
@@ -842,6 +954,7 @@
       • Viático Liquidador: ${reg.viatico_dias ? reg.viatico_dias.toFixed(2) + ' días' : 'Pendiente / En viaje'}
     `;
   }
-</script>
+</script> 
+
 </body>
 </html>
