@@ -6,54 +6,62 @@
   <title>Registro de Trenes - Línea Urquiza</title>
   <style>
     :root {
-      --primary-color: #4da8da;
+      --primary-color: #1b3a4b;
       --secondary-color: #28a745;
-      --bg-overlay: rgba(15, 23, 42, 0.82);
-      --card-bg: rgba(26, 38, 57, 0.75);
-      --text-color: #f1f5f9;
-      --border-color: rgba(255, 255, 255, 0.2);
+      --bg-overlay: rgba(244, 246, 249, 0.92);
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --text-color: #333333;
+      --border-color: #cccccc;
     }
     body {
       font-family: Arial, sans-serif;
-      /* IMAGEN DE FONDO REAL DEL TREN */
-      background-image: linear-gradient(rgba(11, 19, 31, 0.65), rgba(11, 19, 31, 0.65)), 
-                        url('https://images.unsplash.com/photo-1474487548417-781cb71495f3?q=80&w=1600&auto=format&fit=crop');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-      background-repeat: no-repeat;
+      background-color: #f4f6f9;
       color: var(--text-color);
       margin: 0;
       padding: 12px;
-      position: relative;
     }
-
-    /* MARCA DE AGUA "ALÁN" FLOTANTE Y CENTRADA ABAJO */
-    body::after {
-      content: "ALÁN";
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 48px;
-      font-weight: bold;
-      color: rgba(255, 255, 255, 0.25);
-      letter-spacing: 4px;
-      pointer-events: none;
-      z-index: 999;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-    }
-
     .container {
       max-width: 600px;
       margin: 0 auto;
       background: var(--bg-overlay);
       padding: 16px;
       border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
       position: relative;
-      backdrop-filter: blur(4px);
     }
+
+    /* PORTADA CHIQUITA EN LA PARTE SUPERIOR */
+    .app-banner {
+      width: 100%;
+      height: 110px;
+      background-image: linear-gradient(rgba(27, 58, 75, 0.55), rgba(27, 58, 75, 0.75)), 
+                        url('https://images.unsplash.com/photo-1474487548417-781cb71495f3?q=80&w=1200&auto=format&fit=crop');
+      background-size: cover;
+      background-position: center;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .app-banner h1 {
+      margin: 0;
+      font-size: 1.3em;
+      color: #ffffff;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    }
+    .app-banner .watermark {
+      font-size: 0.9em;
+      letter-spacing: 3px;
+      opacity: 0.85;
+      margin-top: 4px;
+      font-weight: bold;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+    }
+
     .header-bar {
       display: flex;
       justify-content: space-between;
@@ -74,7 +82,7 @@
       gap: 4px;
       font-weight: bold;
     }
-    h1, h2 {
+    h2 {
       text-align: center;
       color: var(--primary-color);
       margin: 0;
@@ -85,7 +93,6 @@
       padding: 12px;
       margin-bottom: 16px;
       background-color: var(--card-bg);
-      backdrop-filter: blur(2px);
     }
     .section-title {
       font-weight: bold;
@@ -111,7 +118,6 @@
       font-size: 0.85em;
       font-weight: bold;
       margin-bottom: 4px;
-      color: #cbd5e1;
     }
     input, select, textarea {
       padding: 8px;
@@ -120,11 +126,7 @@
       font-size: 0.95em;
       width: 100%;
       box-sizing: border-box;
-      background: rgba(15, 23, 42, 0.6);
-      color: #ffffff;
-    }
-    input::placeholder, textarea::placeholder {
-      color: #94a3b8;
+      background: #fff;
     }
     
     /* Contenedor Arrastrable de Datos del Tren */
@@ -135,19 +137,19 @@
     }
     .draggable-field {
       cursor: grab;
-      background: rgba(30, 41, 59, 0.7);
+      background: #fff;
       padding: 6px;
       border: 1px dashed var(--primary-color);
       border-radius: 4px;
     }
     .draggable-field:active {
       cursor: grabbing;
-      background: rgba(51, 65, 85, 0.9);
+      background: #eef4ff;
     }
 
     button {
       background-color: var(--primary-color);
-      color: #0f172a;
+      color: white;
       border: none;
       padding: 10px 14px;
       border-radius: 4px;
@@ -160,20 +162,17 @@
     }
     .btn-add {
       background-color: var(--secondary-color);
-      color: white;
       margin-top: 6px;
       width: 100%;
     }
     .btn-save {
-      background-color: #3b82f6;
-      color: white;
+      background-color: #007bff;
       width: 100%;
       font-size: 1.1em;
       padding: 12px;
     }
     .btn-reset {
-      background-color: #ef4444;
-      color: white;
+      background-color: #dc3545;
       width: 100%;
       margin-top: 8px;
     }
@@ -184,15 +183,14 @@
       margin-bottom: 8px;
     }
     .summary-box {
-      background-color: rgba(30, 41, 59, 0.8);
-      border: 1px solid var(--border-color);
+      background-color: #e9ecef;
+      border: 1px solid #ced4da;
       padding: 12px;
       border-radius: 6px;
       margin-top: 10px;
-      color: #e2e8f0;
     }
     
-    /* Historial con Colores Solicitados y Estilo Transparente */
+    /* Historial Plegable con Colores Solicitados */
     .history-card {
       border: 1px solid var(--border-color);
       margin-bottom: 10px;
@@ -201,12 +199,12 @@
       font-size: 0.9em;
     }
     .history-card.card-local {
-      background-color: rgba(15, 23, 42, 0.75);
+      background-color: #ffffff;
       border-left: 5px solid #28a745;
     }
     .history-card.card-viatico {
-      background-color: rgba(13, 31, 60, 0.85);
-      border-left: 5px solid #3b82f6;
+      background-color: #e3f2fd;
+      border-left: 5px solid #0056b3;
     }
 
     .history-header {
@@ -217,16 +215,15 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(30, 41, 59, 0.5);
     }
     .history-header:hover {
-      background: rgba(51, 65, 85, 0.7);
+      opacity: 0.9;
     }
     .history-details {
       display: none;
       padding: 12px;
       border-top: 1px solid var(--border-color);
-      background: rgba(15, 23, 42, 0.6);
+      background: rgba(255, 255, 255, 0.8);
     }
     .history-details.active {
       display: block;
@@ -240,20 +237,18 @@
       top: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0,0,0,0.7);
+      background-color: rgba(0,0,0,0.5);
       justify-content: center;
       align-items: center;
     }
     .modal-content {
-      background-color: #1e293b;
-      color: #f1f5f9;
+      background-color: white;
       padding: 16px;
       border-radius: 8px;
       width: 90%;
       max-width: 450px;
       max-height: 85vh;
       overflow-y: auto;
-      border: 1px solid var(--border-color);
     }
     .calendar-grid {
       display: grid;
@@ -264,34 +259,32 @@
     }
     .cal-header {
       font-weight: bold;
-      background: #334155;
+      background: #eee;
       padding: 6px;
       font-size: 0.8em;
-      color: #cbd5e1;
     }
     .cal-day {
-      border: 1px solid #475569;
+      border: 1px solid #ddd;
       padding: 8px 2px;
       min-height: 40px;
       font-size: 0.85em;
       border-radius: 4px;
       cursor: pointer;
-      background: rgba(15, 23, 42, 0.5);
     }
     .cal-day.empty {
-      background: transparent;
+      background: #f9f9f9;
       border: none;
     }
     .day-local {
-      background-color: rgba(20, 83, 45, 0.7);
-      border-color: #22c55e;
-      color: #bbf7d0;
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+      color: #155724;
       font-weight: bold;
     }
     .day-viatico {
-      background-color: rgba(30, 58, 138, 0.7);
-      border-color: #60a5fa;
-      color: #bfdbfe;
+      background-color: #ffe8d6;
+      border-color: #ffd8be;
+      color: #d97706;
       font-weight: bold;
     }
     .legend {
@@ -312,10 +305,15 @@
 <body> 
 
 <div class="container">
+  <!-- PORTADA SUPERIOR CHICA -->
+  <div class="app-banner">
+    <h1>Registro de Trenes - Línea Urquiza</h1>
+    <div class="watermark">ALÁN</div>
+  </div>
+
   <div class="header-bar">
     <button type="button" class="btn-cal" onclick="abrirCalendario()">📅 Calendario</button>
-    <button type="button" class="btn-cal" style="background:#0284c7;" onclick="abrirCalculadorTramos()">⏱️ Tiempos</button>
-    <h1 style="font-size: 1.1em; margin:0;">Registro de Trenes</h1>
+    <button type="button" class="btn-cal" style="background:#17a2b8;" onclick="abrirCalculadorTramos()">⏱️ Tiempos</button>
   </div> 
 
   <form id="registroForm">
@@ -469,7 +467,7 @@
     <button type="button" class="btn-reset" onclick="reiniciarFormulario()">Limpiar Formulario</button>
   </form> 
 
-  <hr style="margin: 20px 0; border-color: var(--border-color);"> 
+  <hr style="margin: 20px 0;"> 
 
   <h2>Historial Detallado de Fojas</h2>
   <div class="summary-box">
@@ -484,11 +482,11 @@
   <div class="modal-content">
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <h3 style="margin:0;">Calendario de Servicios</h3>
-      <button type="button" onclick="cerrarCalendario()" style="background:#ef4444; color:white;">X</button>
+      <button type="button" onclick="cerrarCalendario()" style="background:#dc3545;">X</button>
     </div>
     <div class="legend">
-      <span><span class="badge" style="background:#22c55e;"></span> Servicio Local</span>
-      <span><span class="badge" style="background:#60a5fa;"></span> Viático / En Viaje</span>
+      <span><span class="badge" style="background:#d4edda;"></span> Servicio Local</span>
+      <span><span class="badge" style="background:#ffe8d6;"></span> Viático / En Viaje</span>
     </div>
     <div class="calendar-grid" id="gridCalendario"></div>
     <div id="detalleDia" style="margin-top: 15px; font-size:0.85em;" class="summary-box">
@@ -501,7 +499,7 @@
   <div class="modal-content">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
       <h3 style="margin:0;">Calcular Tiempo entre Estaciones</h3>
-      <button type="button" onclick="cerrarCalculadorTramos()" style="background:#ef4444; color:white;">X</button>
+      <button type="button" onclick="cerrarCalculadorTramos()" style="background:#dc3545;">X</button>
     </div>
     <div class="row">
       <div class="col">
@@ -514,7 +512,7 @@
       </div>
     </div>
     <div class="summary-box" style="text-align: center; margin-top: 15px;">
-      <div style="font-size: 0.9em; color: #94a3b8;">Tiempo de recorrido:</div>
+      <div style="font-size: 0.9em; color: #555;">Tiempo de recorrido:</div>
       <div id="resultado_tramo" style="font-size: 1.4em; font-weight: bold; color: var(--primary-color); margin-top: 5px;">--:-- hs</div>
     </div>
   </div>
@@ -560,7 +558,7 @@
         container.insertBefore(draggedElement, next ? target.nextSibling : target);
       }
     });
-  }
+  } 
 
   function agregarAUV() {
     const container = document.getElementById('auv_container');
@@ -568,7 +566,7 @@
     div.className = 'auv-item';
     div.innerHTML = `
       <input type="text" placeholder="Código AUV (Ej: 5432mchp)" class="auv_val">
-      <button type="button" style="background:#ef4444; color:white;" onclick="this.parentElement.remove()">X</button>
+      <button type="button" style="background:#dc3545;" onclick="this.parentElement.remove()">X</button>
     `;
     container.appendChild(div);
   } 
@@ -580,7 +578,7 @@
     div.innerHTML = `
       <input type="text" placeholder="Patio de cruce" class="cruce-patio" style="flex:1;">
       <input type="text" placeholder="Tren que cruza" class="cruce-tren" style="flex:1;">
-      <button type="button" style="background:#ef4444; color:white;" onclick="this.parentElement.remove()">X</button>
+      <button type="button" style="background:#dc3545;" onclick="this.parentElement.remove()">X</button>
     `;
     container.appendChild(div);
   } 
@@ -597,7 +595,7 @@
       div.innerHTML = `
         <span style="width: 60px; font-weight: bold;">${est}:</span>
         <input type="text" id="est_${est}" placeholder="HH:MM" maxlength="5" oninput="formatearHoraInput(this)" onchange="actualizarSelectoresTramo()">
-        <button type="button" style="background:#334155; color:#f1f5f9;" onclick="marcarHoraEstacion('est_${est}')">Hora Actual</button>
+        <button type="button" onclick="marcarHoraEstacion('est_${est}')">Hora Actual</button>
       `;
       container.appendChild(div);
     });
@@ -851,7 +849,7 @@
     actualizarHistorialYAcumulados();
   } 
 
-  // Historial con colores diferenciados y diseño transparente
+  // Historial Plegable con colores diferenciados
   function actualizarHistorialYAcumulados() {
     const container = document.getElementById('historial_container');
     container.innerHTML = ''; 
@@ -876,7 +874,7 @@
       card.innerHTML = `
         <div class="history-header" onclick="toggleDetalle(${reg.id})">
           <span>📅 ${fechaFormateada} (${reg.lugar_tomada} ➔ ${reg.lugar_dejada})</span>
-          <span style="font-size: 0.8em; opacity: 0.8;">Tocar para ver ▼</span>
+          <span style="font-size: 0.8em; opacity: 0.7;">Tocar para ver ▼</span>
         </div>
         <div id="details-${reg.id}" class="history-details">
           <div><strong>Tomada:</strong> ${reg.lugar_tomada} (${reg.tomada_servicio ? reg.tomada_servicio.replace('T', ' ') : '-'})</div>
@@ -885,10 +883,10 @@
           <div><strong>Personal:</strong> Maq: ${reg.maquinista} (${reg.legajo_maquinista}) | Jefe: ${reg.jefe_tren} (${reg.legajo_jefe})</div>
           <div><strong>AUV:</strong> ${auvsHtml}</div>
           <div><strong>Cruces:</strong> ${crucesHtml}</div>
-          <div style="margin: 4px 0; font-size: 0.85em; background: rgba(30, 41, 59, 0.7); padding: 4px; border-radius: 4px;"><strong>Estaciones:</strong> ${estacionesHtml}</div>
-          <div><strong>Hs Extras:</strong> ${reg.horas_extras ? reg.horas_extras.toFixed(2) : 0} hs | <strong>Viático:</strong> <span style="color:#f59e0b; font-weight:bold;">${reg.viatico_dias ? reg.viatico_dias.toFixed(2) + ' días' : 'En Viaje / Pendiente'}</span></div>
+          <div style="margin: 4px 0; font-size: 0.85em; background: #f1f3f5; padding: 4px; border-radius: 4px;"><strong>Estaciones:</strong> ${estacionesHtml}</div>
+          <div><strong>Hs Extras:</strong> ${reg.horas_extras ? reg.horas_extras.toFixed(2) : 0} hs | <strong>Viático:</strong> <span style="color:#d97706; font-weight:bold;">${reg.viatico_dias ? reg.viatico_dias.toFixed(2) + ' días' : 'En Viaje / Pendiente'}</span></div>
           ${reg.observaciones ? `<div><strong>Obs:</strong> ${reg.observaciones}</div>` : ''}
-          <button type="button" style="background:#ef4444; color:white; padding:4px 10px; margin-top:8px;" onclick="eliminarRegistro(${reg.id})">Eliminar Foja</button>
+          <button type="button" style="background:#dc3545; padding:4px 10px; margin-top:8px;" onclick="eliminarRegistro(${reg.id})">Eliminar Foja</button>
         </div>
       `;
       container.appendChild(card);
