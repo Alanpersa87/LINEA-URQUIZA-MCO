@@ -32,12 +32,12 @@
       border: 1px solid var(--border-color);
     }
 
-    /* PORTADA CHIQUITA EN LA PARTE SUPERIOR */
+    /* PORTADA CHIQUITA CON LA NUEVA IMAGEN */
     .app-banner {
       width: 100%;
       height: 110px;
-      background-image: linear-gradient(rgba(11, 19, 41, 0.6), rgba(11, 19, 41, 0.85)), 
-                        url('https://images.unsplash.com/photo-1474487548417-781cb71495f3?q=80&w=1200&auto=format&fit=crop');
+      background-image: linear-gradient(rgba(11, 19, 41, 0.45), rgba(11, 19, 41, 0.75)), 
+                        url('data:image/jpeg;base64,...'); /* (Imagen incrustada o referencia directa abajo) */
       background-size: cover;
       background-position: center;
       border-radius: 6px;
@@ -54,7 +54,9 @@
       margin: 0;
       font-size: 1.3em;
       color: #ffffff;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+      text-align: center;
+      padding: 0 10px;
     }
 
     .header-bar {
@@ -234,15 +236,15 @@
       display: block;
     }
 
-    /* MARCA DE AGUA AL FINAL DE TODO */
+    /* MARCA REGISTRADA AL FINAL DE TODO (2 VECES MÁS CHICA) */
     .watermark-footer {
       text-align: center;
-      font-size: 1.8em;
-      font-weight: bold;
-      letter-spacing: 6px;
-      color: rgba(96, 165, 250, 0.35);
-      margin-top: 25px;
-      margin-bottom: 10px;
+      font-size: 0.45em;
+      letter-spacing: 1px;
+      color: rgba(148, 163, 184, 0.6);
+      margin-top: 30px;
+      margin-bottom: 5px;
+      text-transform: uppercase;
       user-select: none;
     }
 
@@ -326,8 +328,8 @@
 <body> 
 
 <div class="container">
-  <!-- PORTADA SUPERIOR CHICA -->
-  <div class="app-banner">
+  <!-- PORTADA SUPERIOR CON LA NUEVA IMAGEN DEL TREN -->
+  <div class="app-banner" style="background-image: linear-gradient(rgba(11, 19, 41, 0.5), rgba(11, 19, 41, 0.8)), url('https://images.unsplash.com/photo-1515165562839-978bbcfc9cc9?q=80&w=1200&auto=format&fit=crop');">
     <h1>Registro de Trenes - Línea Urquiza</h1>
   </div>
 
@@ -515,8 +517,8 @@
 
   <div id="historial_container" style="margin-top: 15px;"></div>
 
-  <!-- MARCA DE AGUA AL FINAL DE TODO -->
-  <div class="watermark-footer">ALÁN</div>
+  <!-- MARCA REGISTRADA BIEN ABAJO (2 VECES MÁS CHICA) -->
+  <div class="watermark-footer">Hecho por Alán Rodrigo Martinez</div>
 </div> 
 
 <div id="modalCalendario" class="modal">
@@ -600,7 +602,7 @@
         container.insertBefore(draggedElement, next ? target.nextSibling : target);
       }
     });
-  }
+  } 
 
   function agregarAUV() {
     const container = document.getElementById('auv_container');
