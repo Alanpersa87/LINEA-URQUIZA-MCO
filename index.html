@@ -35,7 +35,7 @@
       width: 100%;
       height: 110px;
       background-image: linear-gradient(rgba(11, 19, 41, 0.45), rgba(11, 19, 41, 0.75)), 
-                        url(pportada.jpg');
+                        url('https://images.unsplash.com/photo-1515165562839-978bbcfc9282?q=80&w=1200&auto=format&fit=crop');
       background-size: cover;
       background-position: center;
       border-radius: 6px;
@@ -352,7 +352,10 @@
       <div class="row">
         <div class="col">
           <label>Maquinista:</label>
-          <input type="text" id="maquinista" placeholder="Nombre" required>
+          <select id="maquinista_select" onchange="seleccionarPersonal('maquinista')">
+            <option value="">Seleccionar Maquinista...</option>
+          </select>
+          <input type="text" id="maquinista" placeholder="O escribir nombre" style="margin-top: 4px;" required>
         </div>
         <div class="col">
           <label>Legajo Maq.:</label>
@@ -362,7 +365,10 @@
       <div class="row">
         <div class="col">
           <label>Jefe de Tren:</label>
-          <input type="text" id="jefe_tren" placeholder="Nombre" required>
+          <select id="jefe_tren_select" onchange="seleccionarPersonal('jefe')">
+            <option value="">Seleccionar Jefe de Tren...</option>
+          </select>
+          <input type="text" id="jefe_tren" placeholder="O escribir nombre" style="margin-top: 4px;" required>
         </div>
         <div class="col">
           <label>Legajo Jefe:</label>
@@ -535,6 +541,31 @@
 </div> 
 
 <script>
+  const personalListado = [
+    { nombre: "ROMERO, JONATHAN W.", legajo: "52453" },
+    { nombre: "ALARCON, HECTOR", legajo: "51860" },
+    { nombre: "RICHI, AXEL F.", legajo: "52460" },
+    { nombre: "GAIOLI, MAXIMILIANO ARIEL", legajo: "52522" },
+    { nombre: "OCAMPO, DIEGO", legajo: "51885" },
+    { nombre: "NAVARRO, MARTIN", legajo: "" },
+    { nombre: "COTOGNO, MAXIMILIANO", legajo: "52524" },
+    { nombre: "NAIM, NAHUEL ABDON", legajo: "52473" },
+    { nombre: "BRASSAT, JUAN IGNACIO", legajo: "52757" },
+    { nombre: "ALARCON, ALEJANDRO EXEQUIEL", legajo: "52471" },
+    { nombre: "MARTINEZ, ALÁN RODRIGO", legajo: "52521" },
+    { nombre: "OJEDA, JOSE LUIS", legajo: "52468" },
+    { nombre: "PIZZIO, NORBERTO", legajo: "3100" },
+    { nombre: "NAVARRO, CRISTHIAN SEBASTIAN", legajo: "52467" },
+    { nombre: "GALVARINI, FEDERICO G.", legajo: "52196" },
+    { nombre: "GALVARINI, CLAUDIO DANIEL", legajo: "3601" },
+    { nombre: "MOREIRA, LUCAS EZEQUIEL", legajo: "52784" },
+    { nombre: "SANDOVAL, ANDRES", legajo: "52155" },
+    { nombre: "GALVARINI, NICOLAS", legajo: "51988" },
+    { nombre: "GALARZA, MATIAS RUBEN", legajo: "3092" },
+    { nombre: "GALLEGOS, JUAN SEBASTIAN", legajo: "52688" },
+    { nombre: "GOMEZ, GERARDO J.", legajo: "52152" }
+  ];
+
   const tramos = {
     'MCO-MMK': ['MCO', 'MOM', 'MCR', 'MIS', 'MFE', 'MAN', 'MCH', 'MMO', 'MLE', 'MMK'],
     'MMK-MCO': ['MMK', 'MLE', 'MMO', 'MCH', 'MAN', 'MFE', 'MIS', 'MCR', 'MOM', 'MCO'],
@@ -552,10 +583,39 @@
     document.getElementById('tomada_fecha').value = fechaIso;
     document.getElementById('tomada_hora').value = horaStr; 
 
+    poblarSelectPersonal();
     cargarEstaciones();
     configurarDragAndDrop();
     recalcularTodo();
   }; 
+
+  function poblarSelectPersonal() {
+    const selMaq = document.getElementById('maquinista_select');
+    const selJefe = document.getElementById('jefe_tren_select');
+
+    personalListado.forEach(p => {
+      selMaq.add(new Option(p.nombre, JSON.stringify(p)));
+      selJefe.add(new Option(p.nombre, JSON.stringify(p)));
+    });
+  }
+
+  function seleccionarPersonal(tipo) {
+    if (tipo === 'maquinista') {
+      const sel = document.getElementById('maquinista_select');
+      if (sel.value) {
+        const data = JSON.parse(sel.value);
+        document.getElementById('maquinista').value = data.nombre;
+        document.getElementById('legajo_maquinista').value = data.legajo;
+      }
+    } else if (tipo === 'jefe') {
+      const sel = document.getElementById('jefe_tren_select');
+      if (sel.value) {
+        const data = JSON.parse(sel.value);
+        document.getElementById('jefe_tren').value = data.nombre;
+        document.getElementById('legajo_jefe').value = data.legajo;
+      }
+    }
+  }
 
   function configurarDragAndDrop() {
     const container = document.getElementById('train-data-container');
