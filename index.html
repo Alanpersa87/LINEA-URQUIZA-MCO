@@ -34,9 +34,9 @@
     }
     .app-banner {
       width: 100%;
-      height: 120px;
-      background-image: linear-gradient(rgba(11, 19, 41, 0.45), rgba(11, 19, 41, 0.75)), 
-                        url('portada.jpg');
+      height: 140px;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%), 
+                  url('portada.jpg');
       background-size: cover;
       background-position: center;
       border-radius: 6px;
@@ -46,16 +46,32 @@
       align-items: center;
       color: white;
       margin-bottom: 15px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
       border: 1px solid var(--border-color);
+      position: relative;
+      overflow: hidden;
+    }
+    .app-banner::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(11, 19, 41, 0.65);
+    }
+    .app-banner h1, .app-banner p {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      text-align: center;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
     }
     .app-banner h1 {
-      margin: 0;
-      font-size: 1.3em;
-      color: #ffffff;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
-      text-align: center;
-      padding: 0 10px;
+      font-size: 1.4em;
+      color: #60a5fa;
+    }
+    .app-banner p {
+      font-size: 0.85em;
+      color: #cbd5e1;
+      margin-top: 4px;
     }
     .header-bar {
       display: flex;
@@ -318,7 +334,8 @@
 
 <div class="container">
   <div class="app-banner">
-    <h1>Registro de Trenes - Línea Urquiza</h1>
+    <h1>🚂 FERROCARRIL URQUIZA</h1>
+    <p>Sistema de Registro de Fojas y Viáticos</p>
   </div>
 
   <div class="header-bar">
@@ -503,10 +520,17 @@
 
 <div id="modalCalendario" class="modal">
   <div class="modal-content">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
       <h3 style="margin:0;">Calendario de Servicios</h3>
       <button type="button" onclick="cerrarCalendario()" style="background:#ef4444; color:white;">X</button>
     </div>
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; background:#1e293b; padding:8px; border-radius:6px; margin-bottom:10px;">
+      <button type="button" onclick="cambiarMesCalendario(-1)" style="background:#334155; color:white; padding:4px 10px;">◀ Mes Ant.</button>
+      <span id="mesAnioLabel" style="font-weight:bold; color:var(--primary-color);"></span>
+      <button type="button" onclick="cambiarMesCalendario(1)" style="background:#334155; color:white; padding:4px 10px;">Mes Sig. ▶</button>
+    </div>
+
     <div class="legend">
       <span><span class="badge" style="background:#22c55e;"></span> Servicio Local</span>
       <span><span class="badge" style="background:#3b82f6;"></span> Viático / En Viaje</span>
@@ -575,6 +599,8 @@
   }; 
 
   let registrosGuardados = JSON.parse(localStorage.getItem('registros_trenes')) || []; 
+  let calAnioActual = new Date().getFullYear();
+  let calMesActual = new Date().getMonth();
 
   window.onload = function() {
     const ahora = new Date();
@@ -1060,6 +1086,9 @@ Generado por Alán Rodrigo Martinez
   } 
 
   function abrirCalendario() {
+    const ahora = new Date();
+    calAnioActual = ahora.getFullYear();
+    calMesActual = ahora.getMonth();
     document.getElementById('modalCalendario').style.display = 'flex';
     renderCalendario();
   } 
@@ -1068,9 +1097,25 @@ Generado por Alán Rodrigo Martinez
     document.getElementById('modalCalendario').style.display = 'none';
   } 
 
+  function cambiarMesCalendario(delta) {
+    calMesActual += delta;
+    if (calMesActual > 11) {
+      calMesActual = 0;
+      calAnioActual++;
+    } else if (calMesActual < 0) {
+      calMesActual = 11;
+      calAnioActual--;
+    }
+    renderCalendario();
+  }
+
   function renderCalendario() {
     const grid = document.getElementById('gridCalendario');
+    const label = document.getElementById('mesAnioLabel');
     grid.innerHTML = ''; 
+
+    const nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    label.innerText = `${nombresMeses[calMesActual]} ${calAnioActual}`;
 
     const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     diasSemana.forEach(d => {
@@ -1080,12 +1125,8 @@ Generado por Alán Rodrigo Martinez
       grid.appendChild(h);
     }); 
 
-    const ahora = new Date();
-    const anio = ahora.getFullYear();
-    const mes = ahora.getMonth(); 
-
-    const primerDia = new Date(anio, mes, 1).getDay();
-    const totalDias = new Date(anio, mes + 1, 0).getDate(); 
+    const primerDia = new Date(calAnioActual, calMesActual, 1).getDay();
+    const totalDias = new Date(calAnioActual, calMesActual + 1, 0).getDate(); 
 
     for (let i = 0; i < primerDia; i++) {
       const empty = document.createElement('div');
@@ -1094,7 +1135,7 @@ Generado por Alán Rodrigo Martinez
     } 
 
     for (let d = 1; d <= totalDias; d++) {
-      const fechaStr = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const fechaStr = `${calAnioActual}-${String(calMesActual + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const reg = registrosGuardados.find(r => r.fecha === fechaStr); 
 
       const cell = document.createElement('div');
