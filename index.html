@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registro de Trenes - Línea Urquiza</title>
   <link rel="manifest" href="manifest.json">
+  <!-- Librería para generar PDFs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
       --primary-color: #60a5fa;
@@ -36,7 +38,7 @@
       width: 100%;
       height: 120px;
       background-image: linear-gradient(rgba(11, 19, 41, 0.45), rgba(11, 19, 41, 0.75)), 
-                        url('portada.jpg');
+                        url('https://images.unsplash.com/photo-1474487548417-781cb71495f3?q=80&w=1200&auto=format&fit=crop');
       background-size: cover;
       background-position: center;
       border-radius: 6px;
@@ -383,7 +385,7 @@
       <div id="train-data-container">
         <div class="draggable-field" draggable="true">
           <label>Tren (Prefijo):</label>
-          <input type="text" id="tren_prefijo" placeholder="Ej: 5001" required>
+          <input type="text" id="tren_prefijo" inputmode="text" placeholder="Ej: 5001" required>
         </div>
         <div class="draggable-field" draggable="true">
           <label>Locomotora:</label>
@@ -542,7 +544,6 @@
 </div> 
 
 <script>
-  // Listado ordenado alfabéticamente
   const personalListado = [
     { nombre: "ALARCON, ALEJANDRO EXEQUIEL", legajo: "52471" },
     { nombre: "ALARCON, HECTOR", legajo: "51860" },
@@ -968,16 +969,23 @@
           <span style="font-size: 0.8em; opacity: 0.8;">Tocar para ver ▼</span>
         </div>
         <div id="details-${reg.id}" class="history-details">
-          <div><strong>Tomada:</strong> ${reg.lugar_tomada} (${reg.tomada_servicio ? reg.tomada_servicio.replace('T', ' ') : '-'})</div>
-          <div><strong>Dejada:</strong> ${reg.lugar_dejada} (${reg.dejada_servicio ? reg.dejada_servicio.replace('T', ' ') : 'En curso'})</div>
-          <div><strong>Tren / Loc:</strong> ${reg.tren_prefijo || '-'} / ${reg.locomotora || '-'}</div>
-          <div><strong>Personal:</strong> Maq: ${reg.maquinista} (${reg.legajo_maquinista}) | Jefe: ${reg.jefe_tren} (${reg.legajo_jefe})</div>
-          <div><strong>AUV:</strong> ${auvsHtml}</div>
-          <div><strong>Cruces:</strong> ${crucesHtml}</div>
-          <div style="margin: 4px 0; font-size: 0.85em; background: rgba(30, 41, 59, 0.8); padding: 4px; border-radius: 4px;"><strong>Estaciones:</strong> ${estacionesHtml}</div>
-          <div><strong>Hs Extras:</strong> ${reg.horas_extras ? reg.horas_extras.toFixed(2) : 0} hs | <strong>Viático:</strong> <span style="color:#f59e0b; font-weight:bold;">${reg.viatico_dias ? reg.viatico_dias.toFixed(2) + ' días' : 'En Viaje / Pendiente'}</span></div>
-          ${reg.observaciones ? `<div><strong>Obs:</strong> ${reg.observaciones}</div>` : ''}
-          <button type="button" style="background:#ef4444; color:white; padding:4px 10px; margin-top:8px;" onclick="eliminarRegistro(${reg.id})">Eliminar Foja</button>
+          <div id="pdf-content-${reg.id}" style="padding: 10px; background: #0f172a; color: #ffffff; border-radius: 6px;">
+            <h3 style="margin-top:0; color:#60a5fa; border-bottom:1px solid #334155; padding-bottom:4px;">Foja de Servicio - Línea Urquiza</h3>
+            <div><strong>Fecha:</strong> ${fechaFormateada}</div>
+            <div><strong>Tomada:</strong> ${reg.lugar_tomada} (${reg.tomada_servicio ? reg.tomada_servicio.replace('T', ' ') : '-'})</div>
+            <div><strong>Dejada:</strong> ${reg.lugar_dejada} (${reg.dejada_servicio ? reg.dejada_servicio.replace('T', ' ') : 'En curso'})</div>
+            <div><strong>Tren / Loc:</strong> ${reg.tren_prefijo || '-'} / ${reg.locomotora || '-'}</div>
+            <div><strong>Personal:</strong> Maq: ${reg.maquinista} (${reg.legajo_maquinista}) | Jefe: ${reg.jefe_tren} (${reg.legajo_jefe})</div>
+            <div><strong>AUV:</strong> ${auvsHtml}</div>
+            <div><strong>Cruces:</strong> ${crucesHtml}</div>
+            <div style="margin: 6px 0; font-size: 0.85em; background: rgba(30, 41, 59, 0.8); padding: 6px; border-radius: 4px;"><strong>Estaciones:</strong> ${estacionesHtml}</div>
+            <div><strong>Hs Extras:</strong> ${reg.horas_extras ? reg.horas_extras.toFixed(2) : 0} hs | <strong>Viático:</strong> ${reg.viatico_dias ? reg.viatico_dias.toFixed(2) + ' días' : 'En Viaje / Pendiente'}</div>
+            ${reg.observaciones ? `<div style="margin-top:4px;"><strong>Obs:</strong> ${reg.observaciones}</div>` : ''}
+          </div>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <button type="button" style="background:#0284c7; color:white; padding:6px 12px; flex:1;" onclick="descargarFojaPDF(${reg.id}, '${reg.fecha}')">📄 Descargar PDF</button>
+            <button type="button" style="background:#ef4444; color:white; padding:6px 12px;" onclick="eliminarRegistro(${reg.id})">Eliminar</button>
+          </div>
         </div>
       `;
       container.appendChild(card);
@@ -985,7 +993,20 @@
 
     document.getElementById('total_horas_extras').innerText = totalExtras.toFixed(2) + " hs";
     document.getElementById('total_viaticos').innerText = totalViaticosDias.toFixed(2) + " días (" + (totalViaticosDias * 24).toFixed(1) + " hs)";
-  } 
+  }
+
+  function descargarFojaPDF(id, fecha) {
+    const elemento = document.getElementById(`pdf-content-${id}`);
+    const opciones = {
+      margin:       10,
+      filename:     `Foja_Urquiza_${fecha}_${id}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opciones).from(elemento).save();
+  }
 
   function toggleDetalle(id) {
     const el = document.getElementById(`details-${id}`);
