@@ -34,7 +34,7 @@
     }
     .app-banner {
       width: 100%;
-      height: 140px;
+      height: 120px;
       background: linear-gradient(rgba(11, 19, 41, 0.45), rgba(11, 19, 41, 0.75)), 
                   url('portada.jpg'), 
                   url('https://images.unsplash.com/photo-1474487548417-781cb71495f3?q=80&w=1200&auto=format&fit=crop');
@@ -47,26 +47,20 @@
       align-items: center;
       color: white;
       margin-bottom: 15px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
       border: 1px solid var(--border-color);
       position: relative;
       overflow: hidden;
     }
-    .app-banner h1, .app-banner p {
+    .app-banner h1 {
       position: relative;
       z-index: 1;
       margin: 0;
-      text-align: center;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
-    }
-    .app-banner h1 {
-      font-size: 1.4em;
+      font-size: 1.3em;
       color: #ffffff;
-    }
-    .app-banner p {
-      font-size: 0.85em;
-      color: #93c5fd;
-      margin-top: 4px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+      text-align: center;
+      padding: 0 10px;
     }
     .header-bar {
       display: flex;
@@ -329,8 +323,7 @@
 
 <div class="container">
   <div class="app-banner">
-    <h1>🚂 FERROCARRIL URQUIZA</h1>
-    <p>Sistema de Registro de Fojas y Viáticos</p>
+    <h1>Registro de Trenes - Línea Urquiza</h1>
   </div>
 
   <div class="header-bar">
@@ -504,8 +497,12 @@
 
   <h2>Historial Detallado de Fojas</h2>
   <div class="summary-box">
-    <div><strong>Total Horas Extras Acumuladas:</strong> <span id="total_horas_extras">0.00 hs</span></div>
-    <div><strong>Total Días de Viático Liquidados (24hs):</strong> <span id="total_viaticos">0.00 días</span></div>
+    <div style="margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+      <label style="color:var(--primary-color);">Periodo de Liquidación (10 al 9):</label>
+      <select id="select_periodo" onchange="actualizarHistorialYAcumulados()" style="width: auto; padding: 4px 8px;"></select>
+    </div>
+    <div><strong>Total Horas Extras (Ciclo):</strong> <span id="total_horas_extras">0.00 hs</span></div>
+    <div><strong>Total Días de Viático (Ciclo):</strong> <span id="total_viaticos">0.00 días</span></div>
   </div> 
 
   <div id="historial_container" style="margin-top: 15px;"></div>
@@ -844,11 +841,10 @@
       return { estacion: est, hora: objEstaciones[est] };
     });
 
-    // Guardar en el histórico de 10 viajes por tramo
     if (!historicoTramos[tramoSeleccionado]) historicoTramos[tramoSeleccionado] = [];
     historicoTramos[tramoSeleccionado].push(objEstaciones);
     if (historicoTramos[tramoSeleccionado].length > 10) {
-      historicoTramos[tramoSeleccionado].shift(); // Borra el más antiguo, conservando los nuevos 10
+      historicoTramos[tramoSeleccionado].shift();
     }
     localStorage.setItem('historico_tramos_10', JSON.stringify(historicoTramos));
 
@@ -940,6 +936,39 @@
     return { horasExtras };
   }
 
+  function obtenerPeriodoLiquidacion(fechaStr) {
+    const d = new Date(fechaStr + 'T00:00:00');
+    let anio = d.getFullYear();
+    let mes = d.getMonth(); // 0 a 11
+    let dia = d.getDate();
+
+    // Del 10 en adelante pertenece al periodo que cierra el 9 del mes siguiente
+    if (dia >= 10) {
+      mes += 1;
+      if (mes > 11) {
+        mes = 0;
+        anio += 1;
+      }
+    }
+    const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    return `${nombresMeses[mes]} ${anio}`;
+  }
+
+  function obtenerLlavePeriodoOrden(fechaStr) {
+    const d = new Date(fechaStr + 'T00:00:00');
+    let anio = d.getFullYear();
+    let mes = d.getMonth();
+    let dia = d.getDate();
+    if (dia >= 10) {
+      mes += 1;
+      if (mes > 11) {
+        mes = 0;
+        anio += 1;
+      }
+    }
+    return anio * 100 + mes;
+  }
+
   function recalcularTodo() {
     registrosGuardados.sort((a,b) => new Date(a.tomada_servicio) - new Date(b.tomada_servicio)); 
 
@@ -982,22 +1011,59 @@
         reg.viatico_dias = 0;
         reg.estado_ciclo = "Tramo Intermedio";
       }
+
+      reg.periodo_liq = obtenerPeriodoLiquidacion(reg.fecha);
+      reg.periodo_orden = obtenerLlavePeriodoOrden(reg.fecha);
     });
 
     localStorage.setItem('registros_trenes', JSON.stringify(registrosGuardados));
+    poblarSelectPeriodos();
     actualizarHistorialYAcumulados();
   } 
 
+  function poblarSelectPeriodos() {
+    const sel = document.getElementById('select_periodo');
+    const valorActual = sel.value;
+    
+    // Obtener periodos únicos ordenados
+    const periodosMap = new Map();
+    registrosGuardados.forEach(r => {
+      periodosMap.set(r.periodo_liq, r.periodo_orden);
+    });
+
+    const periodosUnicos = Array.from(periodosMap.entries()).sort((a, b) => b[1] - a[1]);
+
+    sel.innerHTML = '';
+    if (periodosUnicos.length === 0) {
+      const periodoActualDefault = obtenerPeriodoLiquidacion(new Date().toISOString().split('T')[0]);
+      sel.add(new Option(periodoActualDefault, periodoActualDefault));
+    } else {
+      periodosUnicos.forEach(([nombre]) => {
+        sel.add(new Option(nombre, nombre));
+      });
+    }
+
+    if (valorActual && Array.from(sel.options).some(o => o.value === valorActual)) {
+      sel.value = valorActual;
+    }
+  }
+
   function actualizarHistorialYAcumulados() {
     const container = document.getElementById('historial_container');
+    const selectPeriodo = document.getElementById('select_periodo');
+    const periodoSeleccionado = selectPeriodo ? selectPeriodo.value : null;
+
     container.innerHTML = ''; 
 
     let totalExtras = 0;
     let totalViaticosDias = 0; 
 
     registrosGuardados.slice().reverse().forEach((reg) => {
-      totalExtras += reg.horas_extras || 0;
-      totalViaticosDias += reg.viatico_dias || 0; 
+      // Filtrar totales según el periodo del 10 al 9 seleccionado
+      if (!periodoSeleccionado || reg.periodo_liq === periodoSeleccionado) {
+        totalExtras += reg.horas_extras || 0;
+        totalViaticosDias += reg.viatico_dias || 0;
+      }
 
       const dateObj = new Date(reg.fecha + "T00:00:00");
       const fechaFormateada = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }); 
@@ -1017,7 +1083,7 @@
         <div id="details-${reg.id}" class="history-details">
           <div style="padding: 10px; background: #0f172a; color: #ffffff; border-radius: 6px;">
             <h3 style="margin-top:0; color:#60a5fa; border-bottom:1px solid #334155; padding-bottom:4px;">Foja de Servicio - Línea Urquiza</h3>
-            <div><strong>Fecha:</strong> ${fechaFormateada}</div>
+            <div><strong>Fecha:</strong> ${fechaFormateada} (Ciclo: ${reg.periodo_liq})</div>
             <div><strong>Tomada:</strong> ${reg.lugar_tomada} (${reg.tomada_servicio ? reg.tomada_servicio.replace('T', ' ') : '-'})</div>
             <div><strong>Dejada:</strong> ${reg.lugar_dejada} (${reg.dejada_servicio ? reg.dejada_servicio.replace('T', ' ') : 'En curso'})</div>
             <div><strong>Tren / Loc:</strong> ${reg.tren_prefijo || '-'} / ${reg.locomotora || '-'}</div>
@@ -1053,7 +1119,7 @@
 ========================================
 FERROCARRIL URQUIZA - FOJA DE SERVICIO
 ========================================
-Fecha: ${reg.fecha}
+Fecha: ${reg.fecha} (Periodo: ${reg.periodo_liq})
 Lugar Tomada: ${reg.lugar_tomada} (${reg.tomada_servicio ? reg.tomada_servicio.replace('T', ' ') : '-'})
 Lugar Dejada: ${reg.lugar_dejada} (${reg.dejada_servicio ? reg.dejada_servicio.replace('T', ' ') : 'En curso'})
 
