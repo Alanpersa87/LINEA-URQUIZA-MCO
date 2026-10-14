@@ -997,15 +997,32 @@
 
   function descargarFojaPDF(id, fecha) {
     const elemento = document.getElementById(`pdf-content-${id}`);
+    
+    // Clonamos el contenido para darle un formato limpio de impresión con fondo claro
+    const clon = elemento.cloneNode(true);
+    clon.style.background = "#ffffff";
+    clon.style.color = "#000000";
+    clon.style.padding = "20px";
+    clon.style.border = "1px solid #ccc";
+    
+    // Ajustar subtítulos e interiores para que contrasten bien en el PDF
+    const titulo = clon.querySelector('h3');
+    if (titulo) titulo.style.color = "#0284c7";
+    
+    const cuadrosInternos = clon.querySelectorAll('div');
+    cuadrosInternos.forEach(div => {
+      div.style.color = "#000000";
+    });
+
     const opciones = {
       margin:       10,
       filename:     `Foja_Urquiza_${fecha}_${id}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
+      html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    html2pdf().set(opciones).from(elemento).save();
+    html2pdf().set(opciones).from(clon).save();
   }
 
   function toggleDetalle(id) {
