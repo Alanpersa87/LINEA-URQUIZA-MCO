@@ -35,8 +35,9 @@
     .app-banner {
       width: 100%;
       height: 140px;
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%), 
-                  url('portada.jpg');
+      background: linear-gradient(rgba(11, 19, 41, 0.45), rgba(11, 19, 41, 0.75)), 
+                  url('portada.jpg'), 
+                  url('https://images.unsplash.com/photo-1474487548417-781cb71495f3?q=80&w=1200&auto=format&fit=crop');
       background-size: cover;
       background-position: center;
       border-radius: 6px;
@@ -51,12 +52,6 @@
       position: relative;
       overflow: hidden;
     }
-    .app-banner::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(11, 19, 41, 0.65);
-    }
     .app-banner h1, .app-banner p {
       position: relative;
       z-index: 1;
@@ -66,11 +61,11 @@
     }
     .app-banner h1 {
       font-size: 1.4em;
-      color: #60a5fa;
+      color: #ffffff;
     }
     .app-banner p {
       font-size: 0.85em;
-      color: #cbd5e1;
+      color: #93c5fd;
       margin-top: 4px;
     }
     .header-bar {
@@ -545,8 +540,19 @@
 <div id="modalTramos" class="modal">
   <div class="modal-content">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-      <h3 style="margin:0;">Calcular Tiempo entre Estaciones</h3>
+      <h3 style="margin:0;">Promedio Tiempos (Últimos 10 Viajes)</h3>
       <button type="button" onclick="cerrarCalculadorTramos()" style="background:#ef4444; color:white;">X</button>
+    </div>
+    <div class="row">
+      <div class="col">
+        <label>Tramo:</label>
+        <select id="tramo_calc_select" onchange="poblarSelectoresTramos()">
+          <option value="MCO-MMK">Concordia -> Monte Caseros (MCO - MMK)</option>
+          <option value="MMK-MCO">Monte Caseros -> Concordia (MMK - MCO)</option>
+          <option value="MCO-MBA">Concordia -> Basavilbaso (MCO - MBA)</option>
+          <option value="MBA-MCO">Basavilbaso -> Concordia (MBA - MCO)</option>
+        </select>
+      </div>
     </div>
     <div class="row">
       <div class="col">
@@ -559,7 +565,7 @@
       </div>
     </div>
     <div class="summary-box" style="text-align: center; margin-top: 15px;">
-      <div style="font-size: 0.9em; color: #94a3b8;">Tiempo de recorrido:</div>
+      <div style="font-size: 0.9em; color: #94a3b8;">Promedio de tardanza (últimos viajes):</div>
       <div id="resultado_tramo" style="font-size: 1.4em; font-weight: bold; color: var(--primary-color); margin-top: 5px;">--:-- hs</div>
     </div>
   </div>
@@ -599,6 +605,10 @@
   }; 
 
   let registrosGuardados = JSON.parse(localStorage.getItem('registros_trenes')) || []; 
+  let historicoTramos = JSON.parse(localStorage.getItem('historico_tramos_10')) || {
+    'MCO-MMK': [], 'MMK-MCO': [], 'MCO-MBA': [], 'MBA-MCO': []
+  };
+
   let calAnioActual = new Date().getFullYear();
   let calMesActual = new Date().getMonth();
 
@@ -698,12 +708,11 @@
       div.className = 'estacion-item';
       div.innerHTML = `
         <span style="width: 60px; font-weight: bold;">${est}:</span>
-        <input type="text" id="est_${est}" placeholder="HH:MM" maxlength="5" inputmode="numeric" oninput="formatearHoraInput(this)" onchange="actualizarSelectoresTramo()">
+        <input type="text" id="est_${est}" placeholder="HH:MM" maxlength="5" inputmode="numeric" oninput="formatearHoraInput(this)">
         <button type="button" style="background:#334155; color:#f1f5f9;" onclick="marcarHoraEstacion('est_${est}')">Hora Actual</button>
       `;
       container.appendChild(div);
     });
-    poblarSelectoresTramos();
   } 
 
   function formatearHoraInput(input) {
@@ -714,7 +723,6 @@
     } else {
       input.value = val;
     }
-    actualizarSelectoresTramo();
   } 
 
   function marcarHoraEstacion(id) {
@@ -722,11 +730,10 @@
     const hh = String(ahora.getHours()).padStart(2, '0');
     const mm = String(ahora.getMinutes()).padStart(2, '0');
     document.getElementById(id).value = `${hh}:${mm}`;
-    actualizarSelectoresTramo();
   } 
 
   function poblarSelectoresTramos() {
-    const tramo = document.getElementById('tramo_select').value;
+    const tramo = document.getElementById('tramo_calc_select').value;
     const lista = tramos[tramo];
     const selOrigen = document.getElementById('tramo_origen');
     const selDestino = document.getElementById('tramo_destino'); 
@@ -757,7 +764,7 @@
   function calcularTiempoTramo() {
     const origen = document.getElementById('tramo_origen').value;
     const destino = document.getElementById('tramo_destino').value;
-    const tramo = document.getElementById('tramo_select').value;
+    const tramo = document.getElementById('tramo_calc_select').value;
     const lista = tramos[tramo]; 
 
     const idxOrigen = lista.indexOf(origen);
@@ -767,37 +774,133 @@
     if (idxOrigen >= idxDestino) {
       resBox.innerText = "Tramo inválido";
       return;
-    } 
+    }
 
-    const valOrigen = document.getElementById('est_' + origen).value;
-    const valDestino = document.getElementById('est_' + destino).value; 
+    const viajesTramo = historicoTramos[tramo] || [];
+    if (viajesTramo.length === 0) {
+      resBox.innerText = "Sin registros previos";
+      return;
+    }
 
-    if (!valOrigen || !valDestino || !valOrigen.includes(':') || !valDestino.includes(':')) {
-      resBox.innerText = "Formato incompleto";
+    let totalMinutosAcumulados = 0;
+    let contadorValidos = 0;
+
+    viajesTramo.forEach(estacionesViaje => {
+      const valOrigen = estacionesViaje[origen];
+      const valDestino = estacionesViaje[destino];
+
+      if (valOrigen && valDestino && valOrigen.includes(':') && valDestino.includes(':')) {
+        const [h1, m1] = valOrigen.split(':').map(Number);
+        const [h2, m2] = valDestino.split(':').map(Number); 
+
+        let min1 = h1 * 60 + m1;
+        let min2 = h2 * 60 + m2; 
+        if (min2 < min1) min2 += 24 * 60;
+
+        totalMinutosAcumulados += (min2 - min1);
+        contadorValidos++;
+      }
+    });
+
+    if (contadorValidos === 0) {
+      resBox.innerText = "Sin datos en este tramo";
+      return;
+    }
+
+    const promedioMin = Math.round(totalMinutosAcumulados / contadorValidos);
+    const horasRes = Math.floor(promedioMin / 60);
+    const minsRes = promedioMin % 60; 
+
+    resBox.innerText = `${horasRes} hs ${minsRes} min (promedio)`;
+  }
+
+  function guardarRegistro() {
+    const fechaTomada = document.getElementById('tomada_fecha').value;
+    const horaTomada = document.getElementById('tomada_hora').value;
+    const fechaDejada = document.getElementById('dejada_fecha').value;
+    const horaDejada = document.getElementById('dejada_hora').value;
+
+    if (!fechaTomada || !horaTomada || !fechaDejada || !horaDejada) {
+      alert("Por favor completa las fechas y horas de tomada y dejada de servicio.");
       return;
     } 
 
-    const [h1, m1] = valOrigen.split(':').map(Number);
-    const [h2, m2] = valDestino.split(':').map(Number); 
+    const tomadaVal = fechaTomada + 'T' + horaTomada;
+    const dejadaVal = fechaDejada + 'T' + horaDejada;
+    const { horasExtras } = calcularServicio();
+    
+    const auvs = Array.from(document.querySelectorAll('.auv_val')).map(i => i.value).filter(v => v);
+    const cruces = Array.from(document.querySelectorAll('.cruce-item')).map(i => {
+      return { patio: i.querySelector('.cruce-patio').value, tren: i.querySelector('.cruce-tren').value };
+    }).filter(c => c.patio || c.tren); 
 
-    let minutos1 = h1 * 60 + m1;
-    let minutos2 = h2 * 60 + m2; 
+    const tramoSeleccionado = document.getElementById('tramo_select').value;
+    const objEstaciones = {};
+    tramos[tramoSeleccionado].forEach(est => {
+      objEstaciones[est] = document.getElementById('est_' + est).value;
+    });
 
-    if (minutos2 < minutos1) {
-      minutos2 += 24 * 60;
-    } 
+    const estacionesCorridaArray = tramos[tramoSeleccionado].map(est => {
+      return { estacion: est, hora: objEstaciones[est] };
+    });
 
-    const diffMin = minutos2 - minutos1;
-    const horasRes = Math.floor(diffMin / 60);
-    const minsRes = diffMin % 60; 
+    // Guardar en el histórico de 10 viajes por tramo
+    if (!historicoTramos[tramoSeleccionado]) historicoTramos[tramoSeleccionado] = [];
+    historicoTramos[tramoSeleccionado].push(objEstaciones);
+    if (historicoTramos[tramoSeleccionado].length > 10) {
+      historicoTramos[tramoSeleccionado].shift(); // Borra el más antiguo, conservando los nuevos 10
+    }
+    localStorage.setItem('historico_tramos_10', JSON.stringify(historicoTramos));
 
-    resBox.innerText = `${horasRes} hs ${minsRes} min`;
+    const registro = {
+      id: Date.now(),
+      fecha: fechaTomada,
+      tomada_servicio: tomadaVal,
+      dejada_servicio: dejadaVal,
+      lugar_tomada: document.getElementById('lugar_tomada').value,
+      lugar_dejada: document.getElementById('lugar_dejada').value,
+      maquinista: document.getElementById('maquinista').value,
+      legajo_maquinista: document.getElementById('legajo_maquinista').value,
+      jefe_tren: document.getElementById('jefe_tren').value,
+      legajo_jefe: document.getElementById('legajo_jefe').value,
+      tren_prefijo: document.getElementById('tren_prefijo').value,
+      locomotora: document.getElementById('locomotora').value,
+      toneladas: document.getElementById('toneladas').value,
+      longitud: document.getElementById('longitud').value,
+      vagones_vacios: document.getElementById('vagones_vacios').value,
+      vagones_cargados: document.getElementById('vagones_cargados').value,
+      eot: document.getElementById('eot').value,
+      orden_trabajo: document.getElementById('orden_trabajo').value,
+      ultimo_vehiculo: document.getElementById('ultimo_vehiculo').value,
+      horas_extras: horasExtras,
+      viatico_dias: 0,
+      auvs: auvs,
+      cruces: cruces,
+      estaciones: estacionesCorridaArray,
+      observaciones: document.getElementById('observaciones').value
+    }; 
+
+    registrosGuardados.push(registro);
+    recalcularTodo(); 
+
+    alert("Foja guardada exitosamente y tiempos actualizados en el histórico.");
+    reiniciarFormulario();
   } 
 
-  function actualizarSelectoresTramo() {
-    if(document.getElementById('modalTramos').style.display === 'flex') {
-      calcularTiempoTramo();
-    }
+  function reiniciarFormulario() {
+    document.getElementById('registroForm').reset();
+    document.getElementById('auv_container').innerHTML = '';
+    document.getElementById('cruce_container').innerHTML = '';
+    
+    const ahora = new Date();
+    const fechaIso = ahora.toISOString().split('T')[0];
+    const horaStr = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
+    
+    document.getElementById('tomada_fecha').value = fechaIso;
+    document.getElementById('tomada_hora').value = horaStr;
+    
+    cargarEstaciones();
+    calcularServicio();
   } 
 
   function calcularServicio() {
@@ -835,88 +938,7 @@
     document.getElementById('tipo_servicio').innerText = esLocal ? "Servicio Local" : "Servicio Fuera de Residencia"; 
 
     return { horasExtras };
-  } 
-
-  function guardarRegistro() {
-    const fechaTomada = document.getElementById('tomada_fecha').value;
-    const horaTomada = document.getElementById('tomada_hora').value;
-    const fechaDejada = document.getElementById('dejada_fecha').value;
-    const horaDejada = document.getElementById('dejada_hora').value;
-
-    if (!fechaTomada || !horaTomada) {
-      alert("Por favor completa la fecha y hora de tomada de servicio.");
-      return;
-    }
-    if (!fechaDejada || !horaDejada) {
-      alert("Por favor completa la fecha y hora de dejada de servicio.");
-      return;
-    } 
-
-    const tomadaVal = fechaTomada + 'T' + horaTomada;
-    const dejadaVal = fechaDejada + 'T' + horaDejada;
-
-    const { horasExtras } = calcularServicio();
-    const auvs = Array.from(document.querySelectorAll('.auv_val')).map(i => i.value).filter(v => v);
-    
-    const cruces = Array.from(document.querySelectorAll('.cruce-item')).map(i => {
-      return { patio: i.querySelector('.cruce-patio').value, tren: i.querySelector('.cruce-tren').value };
-    }).filter(c => c.patio || c.tren); 
-
-    const tramo = document.getElementById('tramo_select').value;
-    const estacionesCorrida = tramos[tramo].map(est => {
-      return { estacion: est, hora: document.getElementById('est_' + est).value };
-    }); 
-
-    const registro = {
-      id: Date.now(),
-      fecha: fechaTomada,
-      tomada_servicio: tomadaVal,
-      dejada_servicio: dejadaVal,
-      lugar_tomada: document.getElementById('lugar_tomada').value,
-      lugar_dejada: document.getElementById('lugar_dejada').value,
-      maquinista: document.getElementById('maquinista').value,
-      legajo_maquinista: document.getElementById('legajo_maquinista').value,
-      jefe_tren: document.getElementById('jefe_tren').value,
-      legajo_jefe: document.getElementById('legajo_jefe').value,
-      tren_prefijo: document.getElementById('tren_prefijo').value,
-      locomotora: document.getElementById('locomotora').value,
-      toneladas: document.getElementById('toneladas').value,
-      longitud: document.getElementById('longitud').value,
-      vagones_vacios: document.getElementById('vagones_vacios').value,
-      vagones_cargados: document.getElementById('vagones_cargados').value,
-      eot: document.getElementById('eot').value,
-      orden_trabajo: document.getElementById('orden_trabajo').value,
-      ultimo_vehiculo: document.getElementById('ultimo_vehiculo').value,
-      horas_extras: horasExtras,
-      viatico_dias: 0,
-      auvs: auvs,
-      cruces: cruces,
-      estaciones: estacionesCorrida,
-      observaciones: document.getElementById('observaciones').value
-    }; 
-
-    registrosGuardados.push(registro);
-    recalcularTodo(); 
-
-    alert("Foja guardada exitosamente.");
-    reiniciarFormulario();
-  } 
-
-  function reiniciarFormulario() {
-    document.getElementById('registroForm').reset();
-    document.getElementById('auv_container').innerHTML = '';
-    document.getElementById('cruce_container').innerHTML = '';
-    
-    const ahora = new Date();
-    const fechaIso = ahora.toISOString().split('T')[0];
-    const horaStr = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
-    
-    document.getElementById('tomada_fecha').value = fechaIso;
-    document.getElementById('tomada_hora').value = horaStr;
-    
-    cargarEstaciones();
-    calcularServicio();
-  } 
+  }
 
   function recalcularTodo() {
     registrosGuardados.sort((a,b) => new Date(a.tomada_servicio) - new Date(b.tomada_servicio)); 
