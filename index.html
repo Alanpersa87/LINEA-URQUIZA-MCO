@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+            <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -983,7 +983,7 @@
             ${reg.observaciones ? `<div style="margin-top:4px;"><strong>Obs:</strong> ${reg.observaciones}</div>` : ''}
           </div>
           <div style="display:flex; gap:8px; margin-top:10px;">
-            <button type="button" style="background:#0284c7; color:white; padding:6px 12px; flex:1;" onclick="descargarFojaPDF(${reg.id}, '${reg.fecha}')">📄 Descargar PDF</button>
+            <button type="button" style="background:#0284c7; color:white; padding:6px 12px; flex:1;" onclick="descargarFojaPDF(${reg.id})">📄 Descargar PDF</button>
             <button type="button" style="background:#ef4444; color:white; padding:6px 12px;" onclick="eliminarRegistro(${reg.id})">Eliminar</button>
           </div>
         </div>
@@ -995,34 +995,91 @@
     document.getElementById('total_viaticos').innerText = totalViaticosDias.toFixed(2) + " días (" + (totalViaticosDias * 24).toFixed(1) + " hs)";
   }
 
-  function descargarFojaPDF(id, fecha) {
-    const elemento = document.getElementById(`pdf-content-${id}`);
-    
-    // Clonamos el contenido para darle un formato limpio de impresión con fondo claro
-    const clon = elemento.cloneNode(true);
-    clon.style.background = "#ffffff";
-    clon.style.color = "#000000";
-    clon.style.padding = "20px";
-    clon.style.border = "1px solid #ccc";
-    
-    // Ajustar subtítulos e interiores para que contrasten bien en el PDF
-    const titulo = clon.querySelector('h3');
-    if (titulo) titulo.style.color = "#0284c7";
-    
-    const cuadrosInternos = clon.querySelectorAll('div');
-    cuadrosInternos.forEach(div => {
-      div.style.color = "#000000";
-    });
+  function descargarFojaPDF(id) {
+    const reg = registrosGuardados.find(r => r.id === id);
+    if (!reg) return;
 
-    const opciones = {
-      margin:       10,
-      filename:     `Foja_Urquiza_${fecha}_${id}.pdf`,
+    let estacionesHtml = reg.estaciones ? reg.estaciones.map(e => `<tr><td style="border: 1px solid #cbd5e1; padding: 6px; font-weight: bold;">${e.estacion}</td><td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${e.hora || '--:--'}</td></tr>`).join('') : '';
+    let auvsHtml = reg.auvs && reg.auvs.length > 0 ? reg.auvs.join(', ') : 'Ninguna';
+    let crucesHtml = reg.cruces && reg.cruces.length > 0 ? reg.cruces.map(c => `${c.patio} -> ${c.tren}`).join('; ') : 'Ninguno';
+
+    // Generación de documento estructurado HTML limpio para PDF (Garantiza cero páginas en blanco)
+    const contenidoHtml = `
+      <div style="font-family: Arial, sans-serif; color: #0f172a; padding: 20px; background: #ffffff; max-width: 800px; margin: 0 auto;">
+        <div style="border-bottom: 3px solid #0284c7; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h2 style="margin: 0; color: #0284c7; font-size: 22px;">FERROCARRIL URQUIZA</h2>
+            <p style="margin: 4px 0 0 0; font-size: 14px; color: #64748b; font-weight: bold;">REGISTRO OFICIAL DE FOJA DE SERVICIO</p>
+          </div>
+          <div style="text-align: right; font-size: 13px; color: #475569;">
+            <strong>Fecha de Emisión:</strong> ${reg.fecha}
+          </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 13px;">
+          <tr>
+            <td style="background: #f1f5f9; padding: 8px; border: 1px solid #cbd5e1; width: 25%;"><strong>Tomada de Servicio:</strong></td>
+            <td style="padding: 8px; border: 1px solid #cbd5e1;">${reg.lugar_tomada} (${reg.tomada_servicio ? reg.tomada_servicio.replace('T', ' ') : '-'})</td>
+          </tr>
+          <tr>
+            <td style="background: #f1f5f9; padding: 8px; border: 1px solid #cbd5e1;"><strong>Dejada de Servicio:</strong></td>
+            <td style="padding: 8px; border: 1px solid #cbd5e1;">${reg.lugar_dejada} (${reg.dejada_servicio ? reg.dejada_servicio.replace('T', ' ') : 'En curso'})</td>
+          </tr>
+          <tr>
+            <td style="background: #f1f5f9; padding: 8px; border: 1px solid #cbd5e1;"><strong>Tren / Locomotora:</strong></td>
+            <td style="padding: 8px; border: 1px solid #cbd5e1;">Tren Prefijo: <strong>${reg.tren_prefijo || '-'}</strong> | Locomotora: <strong>${reg.locomotora || '-'}</strong></td>
+          </tr>
+          <tr>
+            <td style="background: #f1f5f9; padding: 8px; border: 1px solid #cbd5e1;"><strong>Maquinista:</strong></td>
+            <td style="padding: 8px; border: 1px solid #cbd5e1;">${reg.maquinista} (Legajo: ${reg.legajo_maquinista || '-'})</td>
+          </tr>
+          <tr>
+            <td style="background: #f1f5f9; padding: 8px; border: 1px solid #cbd5e1;"><strong>Jefe de Tren:</strong></td>
+            <td style="padding: 8px; border: 1px solid #cbd5e1;">${reg.jefe_tren} (Legajo: ${reg.legajo_jefe || '-'})</td>
+          </tr>
+          <tr>
+            <td style="background: #f1f5f9; padding: 8px; border: 1px solid #cbd5e1;"><strong>Datos Técnicos:</strong></td>
+            <td style="padding: 8px; border: 1px solid #cbd5e1;">Tn: ${reg.toneladas || '-'} | Long: ${reg.longitud || '-'}m | Vacíos: ${reg.vagones_vacios} | Cargados: ${reg.vagones_cargados} | EOT: ${reg.eot || '-'}</td>
+          </tr>
+          <tr>
+            <td style="background: #f1f5f9; padding: 8px; border: 1px solid #cbd5e1;"><strong>AUV y Cruces:</strong></td>
+            <td style="padding: 8px; border: 1px solid #cbd5e1;">AUV: ${auvsHtml} <br> Cruces: ${crucesHtml}</td>
+          </tr>
+          <tr>
+            <td style="background: #f1f5f9; padding: 8px; border: 1px solid #cbd5e1;"><strong>Liquidación:</strong></td>
+            <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; color: #0284c7;">Hs Extras: ${reg.horas_extras ? reg.horas_extras.toFixed(2) : 0} hs | Viático: ${reg.viatico_dias ? reg.viatico_dias.toFixed(2) + ' días' : 'Pendiente'}</td>
+          </tr>
+          ${reg.observaciones ? `<tr><td style="background: #f1f5f9; padding: 8px; border: 1px solid #cbd5e1;"><strong>Observaciones:</strong></td><td style="padding: 8px; border: 1px solid #cbd5e1;">${reg.observaciones}</td></tr>` : ''}
+        </table>
+
+        <h4 style="margin: 15px 0 5px 0; color: #1e293b; font-size: 14px;">Corrida de Estaciones:</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+          <thead>
+            <tr style="background: #0284c7; color: white;">
+              <th style="border: 1px solid #0284c7; padding: 6px; text-align: left;">Estación</th>
+              <th style="border: 1px solid #0284c7; padding: 6px; text-align: center;">Hora Paso</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${estacionesHtml}
+          </tbody>
+        </table>
+
+        <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #cbd5e1; padding-top: 8px;">
+          DOCUMENTO DIGITAL GENERADO DESDE EL SISTEMA DE REGISTRO DE TRENES LÍNEA URQUIZA — CREADO POR ALÁN RODRIGO MARTINEZ
+        </div>
+      </div>
+    `;
+
+    const opt = {
+      margin:       5,
+      filename:     `Foja_Urquiza_${reg.fecha}_${id}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    html2pdf().set(opciones).from(clon).save();
+    html2pdf().from(contenidoHtml).set(opt).save();
   }
 
   function toggleDetalle(id) {
