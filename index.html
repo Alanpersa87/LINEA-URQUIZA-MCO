@@ -174,12 +174,20 @@
       width: 100%;
       font-size: 1.1em;
       padding: 12px;
+      margin-bottom: 8px;
+    }
+    .btn-temp {
+      background-color: #f59e0b;
+      color: #0f172a;
+      width: 100%;
+      font-size: 1em;
+      padding: 10px;
+      margin-bottom: 8px;
     }
     .btn-reset {
       background-color: #ef4444;
       color: white;
       width: 100%;
-      margin-top: 8px;
     }
     .auv-item, .cruce-item, .estacion-item {
       display: flex;
@@ -331,7 +339,7 @@
     <button type="button" class="btn-cal" style="background:#0284c7;" onclick="abrirCalculadorTramos()">⏱️ Tiempos</button>
   </div> 
 
-  <form id="registroForm">
+  <form id="registroForm" oninput="guardarBorradorProvisorio()">
     <div class="section">
       <div class="section-title">1. Datos Generales y Tomada de Servicio</div>
       <div class="row">
@@ -486,10 +494,12 @@
         <div><strong>Horas Foja Actual:</strong> <span id="horas_trabajadas">0 hs</span></div>
         <div><strong>Horas Extras Foja:</strong> <span id="horas_extras">0 hs</span></div>
         <div><strong>Viático Computado:</strong> <span id="viatico_status">Pendiente</span></div>
+        <div style="margin-top:6px; font-size:0.8em; color:#38bdf8;" id="estado_borrador">💾 Borrador sincronizado</div>
       </div>
     </div> 
 
     <button type="button" class="btn-save" onclick="guardarRegistro()">Guardar Foja y Recalcular</button>
+    <button type="button" class="btn-temp" onclick="forzarGuardadoBorrador()">💾 Guardar Borrador Provisorio</button>
     <button type="button" class="btn-reset" onclick="reiniciarFormulario()">Limpiar Formulario</button>
   </form> 
 
@@ -610,16 +620,19 @@
   let calMesActual = new Date().getMonth();
 
   window.onload = function() {
-    const ahora = new Date();
-    const fechaIso = ahora.toISOString().split('T')[0];
-    const horaStr = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
-    
-    document.getElementById('tomada_fecha').value = fechaIso;
-    document.getElementById('tomada_hora').value = horaStr; 
-
     poblarSelectPersonal();
     cargarEstaciones();
     configurarDragAndDrop();
+    
+    // Cargar borrador provisorio si existe
+    if (!cargarBorradorProvisorio()) {
+      const ahora = new Date();
+      const fechaIso = ahora.toISOString().split('T')[0];
+      const horaStr = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
+      document.getElementById('tomada_fecha').value = fechaIso;
+      document.getElementById('tomada_hora').value = horaStr;
+    }
+
     recalcularTodo();
   }; 
 
@@ -649,6 +662,7 @@
         document.getElementById('legajo_jefe').value = data.legajo;
       }
     }
+    guardarBorradorProvisorio();
   }
 
   function configurarDragAndDrop() {
@@ -671,41 +685,42 @@
     });
   } 
 
-  function agregarAUV() {
+  function agregarAUV(valor = '') {
     const container = document.getElementById('auv_container');
     const div = document.createElement('div');
     div.className = 'auv-item';
     div.innerHTML = `
-      <input type="text" placeholder="Código AUV (Ej: 5432mchp)" class="auv_val">
-      <button type="button" style="background:#ef4444; color:white;" onclick="this.parentElement.remove()">X</button>
+      <input type="text" placeholder="Código AUV (Ej: 5432mchp)" class="auv_val" value="${valor}" oninput="guardarBorradorProvisorio()">
+      <button type="button" style="background:#ef4444; color:white;" onclick="this.parentElement.remove(); guardarBorradorProvisorio();">X</button>
     `;
     container.appendChild(div);
   } 
 
-  function agregarCruce() {
+  function agregarCruce(patioVal = '', trenVal = '') {
     const container = document.getElementById('cruce_container');
     const div = document.createElement('div');
     div.className = 'cruce-item';
     div.innerHTML = `
-      <input type="text" placeholder="Patio de cruce" class="cruce-patio" style="flex:1;">
-      <input type="text" placeholder="Tren que cruza" class="cruce-tren" style="flex:1;">
-      <button type="button" style="background:#ef4444; color:white;" onclick="this.parentElement.remove()">X</button>
+      <input type="text" placeholder="Patio de cruce" class="cruce-patio" style="flex:1;" value="${patioVal}" oninput="guardarBorradorProvisorio()">
+      <input type="text" placeholder="Tren que cruza" class="cruce-tren" style="flex:1;" value="${trenVal}" oninput="guardarBorradorProvisorio()">
+      <button type="button" style="background:#ef4444; color:white;" onclick="this.parentElement.remove(); guardarBorradorProvisorio();">X</button>
     `;
     container.appendChild(div);
   } 
 
-  function cargarEstaciones() {
+  function cargarEstaciones(valoresGuardados = {}) {
     const tramo = document.getElementById('tramo_select').value;
     const lista = tramos[tramo];
     const container = document.getElementById('estaciones_container');
     container.innerHTML = ''; 
 
     lista.forEach(est => {
+      const val = valoresGuardados[est] || '';
       const div = document.createElement('div');
       div.className = 'estacion-item';
       div.innerHTML = `
         <span style="width: 60px; font-weight: bold;">${est}:</span>
-        <input type="text" id="est_${est}" placeholder="HH:MM" maxlength="5" inputmode="numeric" oninput="formatearHoraInput(this)">
+        <input type="text" id="est_${est}" placeholder="HH:MM" maxlength="5" inputmode="numeric" value="${val}" oninput="formatearHoraInput(this); guardarBorradorProvisorio();">
         <button type="button" style="background:#334155; color:#f1f5f9;" onclick="marcarHoraEstacion('est_${est}')">Hora Actual</button>
       `;
       container.appendChild(div);
@@ -727,7 +742,115 @@
     const hh = String(ahora.getHours()).padStart(2, '0');
     const mm = String(ahora.getMinutes()).padStart(2, '0');
     document.getElementById(id).value = `${hh}:${mm}`;
+    guardarBorradorProvisorio();
   } 
+
+  // --- Sistema de Borrador Provisorio ---
+  function guardarBorradorProvisorio() {
+    const tramoSeleccionado = document.getElementById('tramo_select').value;
+    const estacionesObj = {};
+    if (tramos[tramoSeleccionado]) {
+      tramos[tramoSeleccionado].forEach(est => {
+        const el = document.getElementById('est_' + est);
+        if (el) estacionesObj[est] = el.value;
+      });
+    }
+
+    const auvs = Array.from(document.querySelectorAll('.auv_val')).map(i => i.value);
+    const cruces = Array.from(document.querySelectorAll('.cruce-item')).map(i => {
+      return { patio: i.querySelector('.cruce-patio').value, tren: i.querySelector('.cruce-tren').value };
+    });
+
+    const borrador = {
+      tomada_fecha: document.getElementById('tomada_fecha').value,
+      tomada_hora: document.getElementById('tomada_hora').value,
+      lugar_tomada: document.getElementById('lugar_tomada').value,
+      maquinista: document.getElementById('maquinista').value,
+      legajo_maquinista: document.getElementById('legajo_maquinista').value,
+      jefe_tren: document.getElementById('jefe_tren').value,
+      legajo_jefe: document.getElementById('legajo_jefe').value,
+      tren_prefijo: document.getElementById('tren_prefijo').value,
+      locomotora: document.getElementById('locomotora').value,
+      toneladas: document.getElementById('toneladas').value,
+      longitud: document.getElementById('longitud').value,
+      vagones_vacios: document.getElementById('vagones_vacios').value,
+      vagones_cargados: document.getElementById('vagones_cargados').value,
+      eot: document.getElementById('eot').value,
+      orden_trabajo: document.getElementById('orden_trabajo').value,
+      ultimo_vehiculo: document.getElementById('ultimo_vehiculo').value,
+      tramo_select: tramoSeleccionado,
+      estaciones: estacionesObj,
+      auvs: auvs,
+      cruces: cruces,
+      observaciones: document.getElementById('observaciones').value,
+      lugar_dejada: document.getElementById('lugar_dejada').value,
+      dejada_fecha: document.getElementById('dejada_fecha').value,
+      dejada_hora: document.getElementById('dejada_hora').value
+    };
+
+    localStorage.setItem('borrador_foja_activa', JSON.stringify(borrador));
+    const lbl = document.getElementById('estado_borrador');
+    if(lbl) lbl.innerText = "💾 Borrador guardado automáticamente";
+    calcularServicio();
+  }
+
+  function forzarGuardadoBorrador() {
+    guardarBorradorProvisorio();
+    alert("¡Borrador guardado provisoriamente con éxito! Podés salir tranquilo que tus datos no se van a perder.");
+  }
+
+  function cargarBorradorProvisorio() {
+    const guardado = localStorage.getItem('borrador_foja_activa');
+    if (!guardado) return false;
+
+    try {
+      const b = JSON.parse(guardado);
+      if (!b.tomada_fecha && !b.tren_prefijo) return false;
+
+      document.getElementById('tomada_fecha').value = b.tomada_fecha || '';
+      document.getElementById('tomada_hora').value = b.tomada_hora || '';
+      document.getElementById('lugar_tomada').value = b.lugar_tomada || 'Concordia';
+      document.getElementById('maquinista').value = b.maquinista || '';
+      document.getElementById('legajo_maquinista').value = b.legajo_maquinista || '';
+      document.getElementById('jefe_tren').value = b.jefe_tren || '';
+      document.getElementById('legajo_jefe').value = b.legajo_jefe || '';
+      document.getElementById('tren_prefijo').value = b.tren_prefijo || '';
+      document.getElementById('locomotora').value = b.locomotora || '';
+      document.getElementById('toneladas').value = b.toneladas || '';
+      document.getElementById('longitud').value = b.longitud || '';
+      document.getElementById('vagones_vacios').value = b.vagones_vacios || '0';
+      document.getElementById('vagones_cargados').value = b.vagones_cargados || '0';
+      document.getElementById('eot').value = b.eot || '';
+      document.getElementById('orden_trabajo').value = b.orden_trabajo || '';
+      document.getElementById('ultimo_vehiculo').value = b.ultimo_vehiculo || '';
+      document.getElementById('tramo_select').value = b.tramo_select || 'MCO-MMK';
+      document.getElementById('observaciones').value = b.observaciones || '';
+      document.getElementById('lugar_dejada').value = b.lugar_dejada || 'Concordia';
+      document.getElementById('dejada_fecha').value = b.dejada_fecha || '';
+      document.getElementById('dejada_hora').value = b.dejada_hora || '';
+
+      cargarEstaciones(b.estaciones || {});
+
+      const auvCont = document.getElementById('auv_container');
+      auvCont.innerHTML = '';
+      if (b.auvrs && Array.isArray(b.auvs)) {
+        b.auvs.forEach(val => agregarAUV(val));
+      } else if (b.auvs && Array.isArray(b.auvs)) {
+        b.auvs.forEach(val => agregarAUV(val));
+      }
+
+      const cruceCont = document.getElementById('cruce_container');
+      cruceCont.innerHTML = '';
+      if (b.cruces && Array.isArray(b.cruces)) {
+        b.cruces.forEach(c => agregarCruce(c.patio, c.tren));
+      }
+
+      return true;
+    } catch(e) {
+      return false;
+    }
+  }
+  // ----------------------------------------
 
   function poblarSelectoresTramos() {
     const tramo = document.getElementById('tramo_calc_select').value;
@@ -877,6 +1000,7 @@
     }; 
 
     registrosGuardados.push(registro);
+    localStorage.removeItem('borrador_foja_activa'); // Limpiar borrador al guardar definitivo
     recalcularTodo(); 
 
     alert("Foja guardada exitosamente y tiempos actualizados en el histórico.");
@@ -884,6 +1008,7 @@
   } 
 
   function reiniciarFormulario() {
+    localStorage.removeItem('borrador_foja_activa');
     document.getElementById('registroForm').reset();
     document.getElementById('auv_container').innerHTML = '';
     document.getElementById('cruce_container').innerHTML = '';
@@ -939,10 +1064,9 @@
   function obtenerPeriodoLiquidacion(fechaStr) {
     const d = new Date(fechaStr + 'T00:00:00');
     let anio = d.getFullYear();
-    let mes = d.getMonth(); // 0 a 11
+    let mes = d.getMonth();
     let dia = d.getDate();
 
-    // Del 10 en adelante pertenece al periodo que cierra el 9 del mes siguiente
     if (dia >= 10) {
       mes += 1;
       if (mes > 11) {
@@ -1025,7 +1149,6 @@
     const sel = document.getElementById('select_periodo');
     const valorActual = sel.value;
     
-    // Obtener periodos únicos ordenados
     const periodosMap = new Map();
     registrosGuardados.forEach(r => {
       periodosMap.set(r.periodo_liq, r.periodo_orden);
@@ -1059,7 +1182,6 @@
     let totalViaticosDias = 0; 
 
     registrosGuardados.slice().reverse().forEach((reg) => {
-      // Filtrar totales según el periodo del 10 al 9 seleccionado
       if (!periodoSeleccionado || reg.periodo_liq === periodoSeleccionado) {
         totalExtras += reg.horas_extras || 0;
         totalViaticosDias += reg.viatico_dias || 0;
